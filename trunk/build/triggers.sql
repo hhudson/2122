@@ -19,7 +19,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_resource_trg ENABLE
+ALTER TRIGGER blog_resource_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_param_trg before
@@ -40,7 +40,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_param_trg ENABLE
+ALTER TRIGGER blog_param_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_long_text_trg before
@@ -61,7 +61,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_long_text_trg ENABLE
+ALTER TRIGGER blog_long_text_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_file_trg before
@@ -94,7 +94,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_file_trg ENABLE
+ALTER TRIGGER blog_file_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_faq_trg before
@@ -118,7 +118,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_faq_trg ENABLE
+ALTER TRIGGER blog_faq_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_contact_message_trg before
@@ -142,7 +142,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_contact_message_trg ENABLE
+ALTER TRIGGER blog_contact_message_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_comment_user_trg before
@@ -173,7 +173,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_comment_user_trg ENABLE
+ALTER TRIGGER blog_comment_user_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_comment_trg before
@@ -212,7 +212,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_comment_trg ENABLE
+ALTER TRIGGER blog_comment_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_comment_notify_trg before
@@ -233,7 +233,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_comment_notify_trg ENABLE
+ALTER TRIGGER blog_comment_notify_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_comment_block_trg before
@@ -257,7 +257,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_comment_block_trg ENABLE
+ALTER TRIGGER blog_comment_block_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_category_trg before
@@ -286,7 +286,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_category_trg ENABLE
+ALTER TRIGGER blog_category_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_author_trg before
@@ -324,7 +324,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_author_trg ENABLE
+ALTER TRIGGER blog_author_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_article_trg before
@@ -356,7 +356,7 @@ BEGIN
   END IF;
 END;
 /
-ALTER TRIGGER blog_article_trg ENABLE
+ALTER TRIGGER blog_article_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_article_a_trg after
@@ -365,5 +365,5 @@ BEGIN
   INSERT INTO blog_article_log(article_id) VALUES(:NEW.article_id);
 END;
 /
-ALTER TRIGGER blog_article_a_trg ENABLE
+ALTER TRIGGER blog_article_a_trg ENABLE;
 /

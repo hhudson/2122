@@ -1,5 +1,5 @@
 @trunk/build/create_tables.sql;
-/*@trunk/build/create_indexes.sql;
+@trunk/build/create_indexes.sql;
 @trunk/sequences/blog_seq.sql;
 @trunk/build/create_synonyms.sql;
 @trunk/build/functions.sql;
@@ -24,12 +24,16 @@
 @trunk/seed/admin.sql;
 @trunk/seed/long.sql;
 @trunk/build/fk.sql;
-@trunk/seed/theme_files.sql;
+@trunk/seed/theme_files.sql; errors
+/
+update blog_author 
+set user_name = 'HAYDEN',
+    passwd = blog_pw_hash('HAYDEN', 'Oradoc_db1');
 /
 BEGIN
   blog_install.set_jobs;
   blog_install.update_param_data;
 END;
 /
-@trunk/apex/209021.sql;
-@trunk/apex/f427.sql;*/
+@trunk/apex/f209021.sql;
+@trunk/apex/f427.sql;

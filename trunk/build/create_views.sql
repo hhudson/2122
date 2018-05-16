@@ -44,8 +44,7 @@ ALTER TABLE BLOG_COMMENT_LOG MODIFY ACTIVE_COMMENT_COUNT NOT NULL
 /
 --------------------------------------------------------------
 --------------------------------------------------------------
-CREATE OR REPLACE FORCE VIEW blog_v$article
-AS 
+CREATE OR REPLACE FORCE EDITIONABLE VIEW  "BLOG_V$ARTICLE" ("ARTICLE_ID", "CATEGORY_ID", "AUTHOR_ID", "AUTHOR_NAME", "AUTHOR_TWITTER", "ARTICLE_TITLE", "DESCRIPTION", "CATEGORY_NAME", "KEYWORDS", "HASTAGS", "ARTICLE_TEXT", "ACTIVE", "CREATED_ON", "CHANGED_ON", "YEAR_MONTH_NUM", "COMMENT_COUNT", "CREATED_ON_TXT", "POSTED_BY_TXT", "CATEGORY_TXT", "VIEW_COMMENT", "POST_COMMENT", "PAGE_NO", "BANNER_IMAGE") AS 
   SELECT a.article_id
   ,c.category_id
   ,b.author_id
@@ -71,6 +70,8 @@ AS
   ,(SELECT apex_lang.message('TEXT_CATEGORY') FROM DUAL) AS category_txt
   ,(SELECT apex_lang.message('TEXT_VIEW_COMMENTS') FROM DUAL) AS view_comment
   ,(SELECT apex_lang.message('TEXT_POST_COMMENT') FROM DUAL) AS post_comment
+  ,a.page_no
+  ,a.banner_image
 FROM blog_article a
   JOIN blog_author b ON a.author_id = b.author_id
   JOIN blog_category c ON a.category_id = c.category_id
@@ -79,7 +80,7 @@ WHERE a.active = 'Y'
   AND b.active = 'Y'
   AND c.active = 'Y'
   AND a.valid_from <= SYSDATE
-WITH READ ONLY CONSTRAINT blog_v$article_ro
+WITH READ ONLY
 /
 --------------------------------------------------------------
 --------------------------------------------------------------
