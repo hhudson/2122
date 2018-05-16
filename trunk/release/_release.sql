@@ -20,20 +20,14 @@
 @trunk/packages/blog_admin_app_pkg.pkb;
 @trunk/build/triggers.sql;
 @trunk/seed/parameter_data.sql;
-@trunk/seed/country_data.sql;
 @trunk/seed/admin.sql;
 @trunk/seed/long.sql;
 @trunk/build/fk.sql;
-@trunk/seed/theme_files.sql; errors
-/
+@trunk/apex/f209021.sql;
+@trunk/apex/f427.sql;
+begin
 update blog_author 
 set user_name = 'HAYDEN',
     passwd = blog_pw_hash('HAYDEN', 'Oradoc_db1');
+end;
 /
-BEGIN
-  blog_install.set_jobs;
-  blog_install.update_param_data;
-END;
-/
-@trunk/apex/f209021.sql;
-@trunk/apex/f427.sql;

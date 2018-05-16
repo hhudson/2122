@@ -89,3 +89,4 @@ AS
   ) RETURN apex_plugin.t_page_item_render_result;
 -------------------------------------------------------------------------------
 END "BLOG_PLUGIN";
+/
