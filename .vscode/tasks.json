@@ -17,7 +17,7 @@
 
     // first argument is the database connection string
     // second argument is the file to execute (ie the current file)
-    "args": ["BLOG_2122/Oradoc_db1@localhost:32122/orclpdb514.localdomain", "@\"${file}\""],
+    "args": ["hayden/Oradoc_db1@localhost:32122/orclpdb514.localdomain", "@\"${file}\""],
 
     // do not switch to the output pane automatically
     //"showOutput": "silent",
