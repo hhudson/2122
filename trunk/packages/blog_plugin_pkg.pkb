@@ -1,8 +1,9 @@
+set define off
 create or replace PACKAGE BODY  "BLOG_PLUGIN" 
 AS
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
--- Private variables, procedures and functions
+-- private variables, procedures and functions
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   g_whitelist_tags        CONSTANT VARCHAR2(200)  := '<b>,</b>,<i>,</i>,<u>,</u>,<code>,</code>';

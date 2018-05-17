@@ -1,4 +1,4 @@
-REM INSERTING into BLOG_PARAM
+--REM INSERTING into BLOG_PARAM
 SET DEFINE OFF;
 Insert into BLOG_PARAM (PARAM_ID,EDITABLE,PARAM_NAME,PARAM_VALUE,PARAM_HELP,PARAM_TYPE,PARAM_NULLABLE,PARAM_GROUP,PARAM_USE_SKILL,PARAM_PARENT) values ('ADMIN_VERSION','N','Blog admin application version id','a2.9.0.2','Used on future releases for upgrade. Only for developers.','TEXT','N','INTERNAL','A',null);
 Insert into BLOG_PARAM (PARAM_ID,EDITABLE,PARAM_NAME,PARAM_VALUE,PARAM_HELP,PARAM_TYPE,PARAM_NULLABLE,PARAM_GROUP,PARAM_USE_SKILL,PARAM_PARENT) values ('ALLOW_COMMENT','Y','Allow comments','Y','If set to "<b>Yes</b>", readers can post comments to any article.','YESNO','N','COMMENT','B',null);

@@ -12,6 +12,7 @@
 @trunk/packages/blog_util_pkg.pkb;
 @trunk/packages/blog_plugin_pkg.pks;
 @trunk/packages/blog_plugin_pkg.pkb;
+set define on;
 @trunk/packages/blog_job_pkg.pks;
 @trunk/packages/blog_job_pkg.pkb;
 @trunk/packages/blog_install_pkg.pks;
@@ -23,11 +24,11 @@
 @trunk/seed/admin.sql;
 @trunk/seed/long.sql;
 @trunk/build/fk.sql;
-@trunk/apex/f209021.sql;
-@trunk/apex/f427.sql;
 begin
 update blog_author 
 set user_name = 'HAYDEN',
     passwd = blog_pw_hash('HAYDEN', 'Oradoc_db1');
 end;
+--@trunk/apex/f209021.sql;
+--@trunk/apex/f427.sql;
 /
