@@ -27,7 +27,7 @@ set define on;
 begin
 update blog_author 
 set user_name = 'ADMIN',
-    passwd = blog_pw_hash('HADMIN', 'Oradoc_db1');
+    passwd = blog_pw_hash('ADMIN', 'Oradoc_db1');
 end;
 --@trunk/apex/f209021.sql;
 --@trunk/apex/f427.sql;
