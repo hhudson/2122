@@ -26,8 +26,8 @@ set define on;
 @trunk/build/fk.sql;
 begin
 update blog_author 
-set user_name = 'HAYDEN',
-    passwd = blog_pw_hash('HAYDEN', 'Oradoc_db1');
+set user_name = 'ADMIN',
+    passwd = blog_pw_hash('HADMIN', 'Oradoc_db1');
 end;
 --@trunk/apex/f209021.sql;
 --@trunk/apex/f427.sql;
