@@ -27,7 +27,7 @@ prompt APPLICATION 209021 - Blog Administration
 -- Application Export:
 --   Application:     209021
 --   Name:            Blog Administration
---   Date and Time:   22:23 Monday June 18, 2018
+--   Date and Time:   22:18 Tuesday June 19, 2018
 --   Exported By:     ADMIN
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -75,7 +75,7 @@ prompt APPLICATION 209021 - Blog Administration
 --     Globalization:
 --       Messages:              31
 --     Reports:
---   Supporting Objects:  Included
+--   Supporting Objects:  Excluded
 
 prompt --application/delete_application
 begin
@@ -129,7 +129,7 @@ wwv_flow_api.create_flow(
 ,p_auto_time_zone=>'N'
 ,p_error_handling_function=>'blog_log.apex_error_handler'
 ,p_last_updated_by=>'ADMIN'
-,p_last_upd_yyyymmddhh24miss=>'20180618222025'
+,p_last_upd_yyyymmddhh24miss=>'20180619220116'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -15217,7 +15217,7 @@ wwv_flow_api.create_page(
 ,p_cache_timeout_seconds=>21600
 ,p_help_text=>'Publish new articles or edit existing ones. Report shows also statistic about articles.'
 ,p_last_updated_by=>'ADMIN'
-,p_last_upd_yyyymmddhh24miss=>'20180618222025'
+,p_last_upd_yyyymmddhh24miss=>'20180619220116'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(1880816086085301)
@@ -15229,10 +15229,12 @@ wwv_flow_api.create_page_plug(
 ,p_include_in_reg_disp_sel_yn=>'Y'
 ,p_plug_display_point=>'BODY_3'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select WORKSPACE, APPLICATION_NAME, PAGE_ID, PAGE_NAME, PAGE_TITLE, PAGE_MODE ',
+'select PAGE_ID, PAGE_NAME, PAGE_ALIAS, HEADER_TEXT, FOOTER_TEXT, AUTHORIZATION_SCHEME, BUILD_OPTION, CREATED_ON, LAST_UPDATED_ON, PAGE_GROUP',
 'from  APEX_APPLICATION_PAGES',
 'where workspace = ''BLOG_WORKSPACE''',
-'AND APPLICATION_NAME=''Blog'''))
+'AND APPLICATION_NAME=''Blog''',
+'and page_mode = ''Normal''',
+'and page_group <> ''Administrative'''))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
 ,p_prn_content_disposition=>'ATTACHMENT'
@@ -15278,24 +15280,6 @@ wwv_flow_api.create_worksheet(
 ,p_internal_uid=>1880938921085302
 );
 wwv_flow_api.create_worksheet_column(
- p_id=>wwv_flow_api.id(1881044045085303)
-,p_db_column_name=>'WORKSPACE'
-,p_display_order=>10
-,p_column_identifier=>'A'
-,p_column_label=>'Workspace'
-,p_column_type=>'STRING'
-,p_display_text_as=>'HIDDEN'
-);
-wwv_flow_api.create_worksheet_column(
- p_id=>wwv_flow_api.id(1881190929085304)
-,p_db_column_name=>'APPLICATION_NAME'
-,p_display_order=>20
-,p_column_identifier=>'B'
-,p_column_label=>'Application name'
-,p_column_type=>'STRING'
-,p_display_text_as=>'HIDDEN'
-);
-wwv_flow_api.create_worksheet_column(
  p_id=>wwv_flow_api.id(1881201582085305)
 ,p_db_column_name=>'PAGE_ID'
 ,p_display_order=>30
@@ -15310,25 +15294,77 @@ wwv_flow_api.create_worksheet_column(
 ,p_display_order=>40
 ,p_column_identifier=>'D'
 ,p_column_label=>'Page name'
+,p_column_link=>'f?p=BLOG:#PAGE_ID#:&SESSION.::&DEBUG.:RP::'
+,p_column_linktext=>'#PAGE_NAME#'
 ,p_column_type=>'STRING'
 );
 wwv_flow_api.create_worksheet_column(
- p_id=>wwv_flow_api.id(1881485167085307)
-,p_db_column_name=>'PAGE_TITLE'
-,p_display_order=>50
-,p_column_identifier=>'E'
-,p_column_label=>'Page title'
+ p_id=>wwv_flow_api.id(1882156315085314)
+,p_db_column_name=>'PAGE_ALIAS'
+,p_display_order=>120
+,p_column_identifier=>'L'
+,p_column_label=>'Page alias'
 ,p_column_type=>'STRING'
-,p_display_text_as=>'HIDDEN'
 );
 wwv_flow_api.create_worksheet_column(
- p_id=>wwv_flow_api.id(1881538222085308)
-,p_db_column_name=>'PAGE_MODE'
-,p_display_order=>60
-,p_column_identifier=>'F'
-,p_column_label=>'Page mode'
+ p_id=>wwv_flow_api.id(1882635656085319)
+,p_db_column_name=>'HEADER_TEXT'
+,p_display_order=>170
+,p_column_identifier=>'Q'
+,p_column_label=>'Header text'
 ,p_column_type=>'STRING'
-,p_display_text_as=>'HIDDEN'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1883301689085326)
+,p_db_column_name=>'AUTHORIZATION_SCHEME'
+,p_display_order=>240
+,p_column_identifier=>'X'
+,p_column_label=>'Authorization scheme'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1883592943085328)
+,p_db_column_name=>'BUILD_OPTION'
+,p_display_order=>260
+,p_column_identifier=>'Z'
+,p_column_label=>'Build option'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1922467605219610)
+,p_db_column_name=>'PAGE_GROUP'
+,p_display_order=>580
+,p_column_identifier=>'BF'
+,p_column_label=>'Page group'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1924683335219632)
+,p_db_column_name=>'CREATED_ON'
+,p_display_order=>800
+,p_column_identifier=>'CB'
+,p_column_label=>'Created on'
+,p_column_type=>'DATE'
+,p_column_alignment=>'CENTER'
+,p_tz_dependent=>'N'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1924873881219634)
+,p_db_column_name=>'LAST_UPDATED_ON'
+,p_display_order=>820
+,p_column_identifier=>'CD'
+,p_column_label=>'Last updated on'
+,p_column_type=>'DATE'
+,p_column_alignment=>'CENTER'
+,p_tz_dependent=>'N'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2040868954414425)
+,p_db_column_name=>'FOOTER_TEXT'
+,p_display_order=>830
+,p_column_identifier=>'CE'
+,p_column_label=>'Footer text'
+,p_column_type=>'STRING'
 );
 wwv_flow_api.create_worksheet_rpt(
  p_id=>wwv_flow_api.id(1888391269088584)
@@ -15338,7 +15374,7 @@ wwv_flow_api.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_display_rows=>50
-,p_report_columns=>'WORKSPACE:APPLICATION_NAME:PAGE_ID:PAGE_NAME:PAGE_TITLE:PAGE_MODE'
+,p_report_columns=>'PAGE_ID:PAGE_NAME:PAGE_ALIAS:HEADER_TEXT:AUTHORIZATION_SCHEME:BUILD_OPTION:PAGE_GROUP:CREATED_ON:LAST_UPDATED_ON:FOOTER_TEXT'
 ,p_flashback_enabled=>'N'
 );
 end;
@@ -27316,26 +27352,6 @@ wwv_flow_api.create_page_process(
 ,p_error_display_location=>'INLINE_IN_NOTIFICATION'
 ,p_process_success_message=>'Action Processed.'
 );
-end;
-/
-prompt --application/deployment/definition
-begin
-null;
-end;
-/
-prompt --application/deployment/install
-begin
-null;
-end;
-/
-prompt --application/deployment/checks
-begin
-null;
-end;
-/
-prompt --application/deployment/buildoptions
-begin
-null;
 end;
 /
 prompt --application/end_environment
