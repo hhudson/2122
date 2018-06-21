@@ -1,5 +1,8 @@
 create or replace PACKAGE BODY  "BLOG_ADMIN_APP" 
 AS
+
+gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
+
 --------------------------------------------------------------------------------
   -- Private constants and functions
   g_article_text_collection CONSTANT VARCHAR2(80) := 'ARTICLE_TEXT_COLLECTION';
@@ -13,7 +16,15 @@ AS
     p_col_sep   IN VARCHAR2 DEFAULT '|'
   ) RETURN VARCHAR2
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'build_apex_lang_message_md5';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_translation_entry_id', p_translation_entry_id);
+    logger.append_param(l_params, 'p_translatable_message', p_translatable_message);
+    logger.append_param(l_params, 'p_language_code', p_language_code);
+    logger.append_param(l_params, 'p_message_text', p_message_text);
+    logger.append_param(l_params, 'p_col_sep', p_col_sep);
+    logger.log('START', l_scope, null, l_params);
     RETURN sys.utl_raw.cast_to_raw(sys.dbms_obfuscation_toolkit.md5(input_string => 
       p_translation_entry_id || p_col_sep ||
       p_translatable_message || p_col_sep ||
@@ -21,6 +32,10 @@ AS
       p_message_text || p_col_sep ||
       ''
     ));
+  logger.log('END', l_scope);
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+  raise;
   END build_apex_lang_message_md5;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -38,9 +53,11 @@ AS
     p_table IN APEX_APPLICATION_GLOBAL.VC_ARR2
   ) RETURN CLOB
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'table_to_clob';
     l_len   SIMPLE_INTEGER := 0;
     l_data  CLOB;
   BEGIN
+    logger.log('START', l_scope);
     l_len := p_table.COUNT;
     IF l_len = 0
     OR COALESCE(LENGTH(p_table(1)), 0) = 0
@@ -62,7 +79,11 @@ AS
       );
     END LOOP;
     dbms_lob.close(l_data);
+    logger.log('END', l_scope);
     RETURN l_data;
+    exception when others then 
+      logger.log_error('Unhandled Exception', l_scope); 
+    raise;
   END table_to_clob;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -70,13 +91,15 @@ AS
     p_clob IN CLOB
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'print_clob';
+    l_params logger.tab_param;
     l_length      SIMPLE_INTEGER := 0;
     l_clob_len    SIMPLE_INTEGER := 0;
     l_offset      SIMPLE_INTEGER := 1;
     l_byte_len    SIMPLE_INTEGER := 0;
     l_temp        VARCHAR2(32767);
   BEGIN
-  --
+    logger.log('START', l_scope);
     l_length    := COALESCE(dbms_lob.getlength(p_clob), 0);
     l_clob_len  := l_length;
     l_byte_len  := 30000;
@@ -104,6 +127,10 @@ AS
       END LOOP;
     --
     END IF;
+  logger.log('END', l_scope);
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope); 
+    raise;
   END print_clob;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

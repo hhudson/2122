@@ -1,6 +1,12 @@
 create or replace PACKAGE BODY  "BLOG_UTIL" 
 AS
 --------------------------------------------------------------------------------
+--the below is part of logger best practices
+gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 -- Private variables, procedures and functions
 --------------------------------------------------------------------------------
@@ -26,13 +32,18 @@ AS
     p_user_id IN NUMBER
   ) RETURN VARCHAR2
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_user_name';
+    l_params logger.tab_param;
     l_user_name VARCHAR2(255);
   BEGIN
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.log('START', l_scope, null, l_params);
     SELECT nick_name
     INTO l_user_name
     FROM blog_comment_user
     WHERE user_id = p_user_id
     ;
+    logger.log('END', l_scope);
     RETURN l_user_name;
   EXCEPTION WHEN
     NO_DATA_FOUND OR
@@ -40,16 +51,24 @@ AS
     INVALID_NUMBER
   THEN
     apex_debug.warn('blog_util.get_user_name(p_user_id => %s); error: %s', COALESCE(to_char(p_user_id), 'NULL'), sqlerrm);
-    RETURN NULL;
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params);
+    Raise;
+  when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END get_user_name;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION get_article_author(
-    p_article_id IN NUMBER
+    p_page_id IN NUMBER
   ) RETURN t_author
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_article_author';
+    l_params logger.tab_param;
     l_author  t_author;
   BEGIN
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.log('START', l_scope, null, l_params);
     SELECT u.author_id,
       author_name,
       email,
@@ -60,17 +79,22 @@ AS
       AND EXISTS(
       SELECT 1
       FROM blog_v$article a
-      WHERE a.article_id = p_article_id
+      WHERE a.article_id = p_page_id
       AND a.author_id = u.author_id
     );
+    logger.log('END', l_scope);
     RETURN l_author;
   EXCEPTION WHEN
     NO_DATA_FOUND OR
     VALUE_ERROR OR
     INVALID_NUMBER
   THEN
-    apex_debug.warn('blog_util.get_author_record_by_article(p_article_id => %s); error: %s', coalesce(to_char(p_article_id), 'NULL'), sqlerrm);
-    RETURN NULL;
+    apex_debug.warn('blog_util.get_author_record_by_article(p_page_id => %s); error: %s', coalesce(to_char(p_page_id), 'NULL'), sqlerrm);
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params); 
+    raise;
+  when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END get_article_author;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -79,11 +103,23 @@ AS
     p_separator IN VARCHAR2 DEFAULT ':'
   ) RETURN apex_application_global.vc_arr2
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'raw_to_table';
+    l_params logger.tab_param;
     l_value VARCHAR2(32700);
   BEGIN
+    logger.append_param(l_params, 'p_value', p_value);
+    logger.append_param(l_params, 'p_separator', p_separator);
+    logger.log('START', l_scope, null, l_params);
+    
     l_value := sys.utl_raw.cast_to_varchar2(p_value);
     l_value := sys.utl_url.unescape(l_value);
+    
+    logger.log('END', l_scope);
     RETURN apex_util.string_to_table(l_value, COALESCE(p_separator, ':'));
+    
+    exception when others then 
+      logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+      raise;
   END raw_to_table;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -91,7 +127,12 @@ AS
     p_user_id IN NUMBER
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'set_cookie';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.log('START', l_scope, null, l_params);
+
     sys.owa_util.mime_header('text/html', FALSE);
     -- The first element in the table is the cookie version
     -- The second element in the table is the user id
@@ -101,16 +142,23 @@ AS
       expires => blog_util.g_cookie_expires
     );
     --sys.owa_util.http_header_close;
+    logger.log('END', l_scope);
+    exception when others then 
+      logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+      raise;
   END set_cookie;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION get_cookie
   RETURN NUMBER
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_cookie';
+    l_params logger.tab_param;
     l_user_id     NUMBER(38,0);
     l_cookie_val  VARCHAR2(2000);
     l_cookie_vals apex_application_global.vc_arr2;
   BEGIN
+    logger.log('START', l_scope);
     l_cookie_val := apex_authentication.get_login_username_cookie(blog_util.g_cookie_name);
     IF l_cookie_val IS NOT NULL THEN
       l_cookie_vals := blog_util.raw_to_table(l_cookie_val);
@@ -120,19 +168,26 @@ AS
         l_user_id := to_number(l_cookie_vals(2));
       END IF;
     END IF;
+
+    logger.log('END', l_scope);
     RETURN l_user_id;
+    
   EXCEPTION WHEN
     NO_DATA_FOUND OR
     INVALID_NUMBER OR
     VALUE_ERROR
   THEN
     apex_debug.warn('blog_util.get_cookie; error: %s', sqlerrm);
-    RETURN NULL;
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params); 
+    raise;
+  when others then 
+      logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+      raise;
   END get_cookie;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION get_email_message (
-    p_article_title IN VARCHAR2,
+    p_page_title IN VARCHAR2,
     p_article_url   IN VARCHAR2,
     p_blog_name     IN VARCHAR2,
     p_author_name   IN VARCHAR2,
@@ -140,15 +195,25 @@ AS
     p_body          IN VARCHAR2
   ) RETURN t_email
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_email_message';
+    l_params logger.tab_param;
     TYPE tabtype IS TABLE OF VARCHAR2(255) INDEX BY VARCHAR2(40);
     l_arr   tabtype;
     l_key   VARCHAR2(40);
     l_email t_email;
   BEGIN
+    logger.append_param(l_params, 'p_page_title', p_page_title);
+    logger.append_param(l_params, 'p_article_url', p_article_url);
+    logger.append_param(l_params, 'p_blog_name', p_blog_name);
+    logger.append_param(l_params, 'p_author_name', p_author_name);
+    logger.append_param(l_params, 'p_subj', p_subj);
+    logger.append_param(l_params, 'p_body', p_body);
+    logger.log('START', l_scope, null, l_params);
+
     l_email.v_subj            := apex_lang.message(p_subj);
     l_email.v_body            := apex_lang.message(p_body);
     l_arr('#BLOG_NAME#')      := p_blog_name;
-    l_arr('#ARTICLE_TITLE#')  := p_article_title;
+    l_arr('#ARTICLE_TITLE#')  := p_page_title;
     l_arr('#AUTHOR_NAME#')    := p_author_name;
     l_arr('#ARTICLE_URL#')    := p_article_url;  
     l_key := l_arr.FIRST;
@@ -161,42 +226,76 @@ AS
     /* Get blog email */
     l_email.v_from := blog_util.get_param_value('BLOG_EMAIL');
     --
+    logger.log('END', l_scope);
     RETURN l_email;
+
+    exception when others then 
+      logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+      raise;
   END get_email_message;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION get_article_url(
-    p_article_id  IN NUMBER,
+    p_page_id  IN NUMBER,
     p_app_alias   IN VARCHAR2,
     p_base_url    IN VARCHAR2 DEFAULT NULL
   ) RETURN VARCHAR2
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_article_url';
+    l_params logger.tab_param;
     l_url VARCHAR2(2000);
   BEGIN
-    l_url := 'f?p=' || p_app_alias || ':READ:0::::ARTICLE:' || p_article_id;
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.append_param(l_params, 'p_app_alias', p_app_alias);
+    logger.append_param(l_params, 'p_base_url', p_base_url);
+    logger.log('START', l_scope, null, l_params);
+
+    l_url := 'f?p=' || p_app_alias || ':READ:0::::ARTICLE:' || p_page_id;
     l_url := apex_util.prepare_url(p_url => l_url, p_checksum_type => 'PUBLIC_BOOKMARK');
     l_url := p_base_url || l_url;
+
+    logger.log('END', l_scope);
     RETURN l_url;
+
+    exception when others then 
+      logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+      raise;
   END get_article_url;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION get_unsubscribe_url (
     p_user_id     IN NUMBER,
-    p_article_id  IN NUMBER,
+    p_page_id  IN NUMBER,
     p_app_alias   IN VARCHAR2,
     p_base_url    IN VARCHAR2,
     p_page_alias  IN VARCHAR2 DEFAULT 'UNSUBSCRIBE',
     p_session_id  IN NUMBER DEFAULT 0
   ) RETURN VARCHAR2
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_unsubscribe_url';
+    l_params logger.tab_param;
     l_url       VARCHAR2(2000);
     l_value     VARCHAR2(2000);
   BEGIN
-    l_value := sys.utl_raw.cast_to_raw(p_user_id || ':' || p_article_id);
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.append_param(l_params, 'p_app_alias', p_app_alias);
+    logger.append_param(l_params, 'p_base_url', p_base_url);
+    logger.append_param(l_params, 'p_page_alias', p_page_alias);
+    logger.append_param(l_params, 'p_session_id', p_session_id);
+    logger.log('START', l_scope, null, l_params);
+
+    l_value := sys.utl_raw.cast_to_raw(p_user_id || ':' || p_page_id);
     l_url   := 'f?p=' || p_app_alias || ':UNSUBSCRIBE:' || p_session_id || '::::SUBSCRIBER_ID:' || l_value;
     l_url   := apex_util.prepare_url(p_url => l_url, p_checksum_type => 'PUBLIC_BOOKMARK');
     l_url   := p_base_url || l_url;
+
+    logger.log('END', l_scope);
     RETURN l_url;
+
+    exception when others then 
+      logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+      raise;
   END get_unsubscribe_url;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -207,7 +306,14 @@ AS
     p_website     IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'save_user_attr';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_email', p_email);
+    logger.append_param(l_params, 'p_nick_name', p_nick_name);
+    logger.append_param(l_params, 'p_website', p_website);
+    logger.log('START', l_scope, null, l_params);
     BEGIN
       INSERT INTO blog_comment_user (email, nick_name, website)
         VALUES (p_email, p_nick_name, p_website)
@@ -221,20 +327,32 @@ AS
       RETURNING user_id INTO p_user_id
       ;
     END;
+  
+  logger.log('END', l_scope);
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END save_user_attr;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE save_notify_user (
     p_user_id         IN NUMBER,
-    p_article_id      IN NUMBER,
+    p_page_id      IN NUMBER,
     p_followup        IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'save_notify_user';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.append_param(l_params, 'p_followup', p_followup);
+    logger.log('START', l_scope, null, l_params);
+
     MERGE INTO blog_comment_notify a
     USING (
       SELECT p_user_id AS user_id,
-        p_article_id AS article_id,
+        p_page_id AS article_id,
         p_followup  AS followup_notify
       FROM DUAL
     ) b
@@ -245,22 +363,36 @@ AS
       INSERT (user_id, article_id, followup_notify)
       VALUES (b.user_id, b.article_id, b.followup_notify)
     ;
+  
+  logger.log('END', l_scope);
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END save_notify_user;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE notify_author (
-    p_article_title IN VARCHAR2,
+    p_page_title IN VARCHAR2,
     p_article_url   IN VARCHAR2,
     p_blog_name     IN VARCHAR2,
     p_author_name   IN VARCHAR2,
     p_author_email  IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'notify_author';
+    l_params logger.tab_param;
     l_email t_email;
   BEGIN
+    logger.append_param(l_params, 'p_page_title', p_page_title);
+    logger.append_param(l_params, 'p_article_url', p_article_url);
+    logger.append_param(l_params, 'p_blog_name', p_blog_name);
+    logger.append_param(l_params, 'p_author_name', p_author_name);
+    logger.append_param(l_params, 'p_author_email', p_author_email);
+    logger.log('START', l_scope, null, l_params);
+
     /* Get email subject and body to variable */
     l_email := blog_util.get_email_message(
-      p_article_title => p_article_title,
+      p_page_title => p_page_title,
       p_article_url   => p_article_url,
       p_blog_name     => p_blog_name,
       p_author_name   => p_author_name,
@@ -276,6 +408,10 @@ AS
     );
     /* we do have time wait email sending */
     --APEX_MAIL.PUSH_QUEUE;
+  logger.log('END', l_scope);
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END notify_author;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------  
@@ -285,7 +421,14 @@ AS
     p_reason      IN VARCHAR2 DEFAULT 'Not Found'
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'raise_http_error';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_id', p_id);
+    logger.append_param(l_params, 'p_error_code', p_error_code);
+    logger.append_param(l_params, 'p_reason', p_reason);
+    logger.log('START', l_scope, null, l_params);
+
     apex_debug.warn('HTTP %s %s id: %s', p_error_code, p_reason, coalesce(p_id, '(NULL)'));
     sys.owa_util.status_line(
       nstatus       => p_error_code,
@@ -293,6 +436,11 @@ AS
       bclose_header => true
     );
     apex_application.stop_apex_engine;
+  
+  logger.log('END', l_scope);
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END raise_http_error;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------  
@@ -300,18 +448,29 @@ AS
     p_id  IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'check_http410';
+    l_params logger.tab_param;
     l_count PLS_INTEGER;
   BEGIN
+    logger.append_param(l_params, 'p_id', p_id);
+    logger.log('START', l_scope, null, l_params);
+
     SELECT COUNT(1)
     INTO l_count
     FROM blog_http410 c
     WHERE c.deleted_id = p_id
     ;
+
+    logger.log('END', l_scope);
     blog_util.raise_http_error(p_id, 410, 'Gone');
   EXCEPTION WHEN 
     NO_DATA_FOUND
   THEN
     blog_util.raise_http_error(p_id);
+    logger.log_error('No data found', l_scope, null, l_params); 
+  when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END check_http410;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -323,9 +482,15 @@ AS
     p_session_id  IN NUMBER
   ) RETURN NUMBER
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'init_session';
+    l_params logger.tab_param;
     l_user_id     NUMBER(38);
     l_user_name   VARCHAR2(255);
   BEGIN
+    logger.append_param(l_params, 'p_app_id', p_app_id);
+    logger.append_param(l_params, 'p_session_id', p_session_id);
+    logger.log('START', l_scope, null, l_params);
+
     blog_util.set_items_from_param(p_app_id);
     l_user_id := blog_util.get_cookie;
     IF l_user_id IS NOT NULL THEN
@@ -347,7 +512,13 @@ AS
         p_activity_type => 'NEW_SESSION'
       );
     END IF;
+
+    logger.log('END', l_scope);
     RETURN l_user_id;
+  
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END init_session;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -355,22 +526,38 @@ AS
     p_param_id IN VARCHAR2
   ) RETURN VARCHAR2
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_param_value';
+    l_params logger.tab_param;
     l_value VARCHAR2(4000);
   BEGIN
+    logger.append_param(l_params, 'p_param_id', p_param_id);
+    logger.log('START', l_scope, null, l_params);
+
     SELECT param_value
     INTO l_value
     FROM blog_param
     WHERE param_id = p_param_id
     ;
+
+    logger.log('END', l_scope);
     RETURN l_value;
+  
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END get_param_value;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE set_items_from_param(
     p_app_id IN NUMBER
   ) AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'set_items_from_param';
+    l_params logger.tab_param;
   --PRAGMA AUTONOMOUS_TRANSACTION;
   BEGIN
+    logger.append_param(l_params, 'p_app_id', p_app_id);
+    logger.log('START', l_scope, null, l_params);
+
     FOR c1 IN (
       SELECT
         p.param_id,
@@ -386,6 +573,11 @@ AS
     ) LOOP
       apex_util.set_session_state(c1.param_id, c1.param_value);
     END LOOP;
+    logger.log('END', l_scope);
+  
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END set_items_from_param;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -395,8 +587,8 @@ AS
     p_app_alias       IN VARCHAR2,
     p_base_url        IN VARCHAR2,
     p_blog_name       IN VARCHAR2,
-    p_article_id      IN NUMBER,
-    p_article_title   IN VARCHAR2,
+    p_page_id         IN NUMBER,
+    p_page_title      IN VARCHAR2,
     p_email           IN VARCHAR2,
     p_nick_name       IN VARCHAR2,
     p_website         IN VARCHAR2,
@@ -404,11 +596,27 @@ AS
     p_comment         IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'save_comment';
+    l_params logger.tab_param;
     l_article_url VARCHAR2(4000);
     l_comment_id  NUMBER(38);
     l_publish     VARCHAR2(1) := 'N';
     l_author      t_author;
   BEGIN
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_apex_session_id', p_apex_session_id);
+    logger.append_param(l_params, 'p_app_alias', p_app_alias);
+    logger.append_param(l_params, 'p_base_url', p_base_url);
+    logger.append_param(l_params, 'p_blog_name', p_blog_name);
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.append_param(l_params, 'p_page_title', p_page_title);
+    logger.append_param(l_params, 'p_email', p_email);
+    logger.append_param(l_params, 'p_nick_name', p_nick_name);
+    logger.append_param(l_params, 'p_website', p_website);
+    logger.append_param(l_params, 'p_followup', p_followup);
+    logger.append_param(l_params, 'p_comment', p_comment);
+    logger.log('START', l_scope, null, l_params);
+
     /* Set APP_USER */
     apex_custom_auth.set_user(upper(p_nick_name));
     --
@@ -422,7 +630,7 @@ AS
     /* Save should user be notified when new comment is posted */
     blog_util.save_notify_user(
       p_user_id     => p_user_id,
-      p_article_id  => p_article_id,
+      p_page_id     => p_page_id,
       p_followup    => p_followup
     );
     /* Set user id to cookie */
@@ -435,9 +643,9 @@ AS
     --
     /* Inser comment to table */
     INSERT INTO blog_comment
-    (user_id, apex_session_id, article_id, comment_text, moderated)
+    (user_id, apex_session_id, p_page_id, comment_text, moderated)
     VALUES
-    (p_user_id, p_apex_session_id, p_article_id, p_comment , l_publish)
+    (p_user_id, p_apex_session_id, p_page_id, p_comment , l_publish)
     RETURNING comment_id INTO l_comment_id
     ;
     --
@@ -454,8 +662,8 @@ AS
         blog_util.notify_readers (
           p_comment_id    => l_comment_id,
           p_user_id       => p_user_id,
-          p_article_id    => p_article_id,
-          p_article_title => p_article_title,
+          p_page_id    => p_page_id,
+          p_page_title => p_page_title,
           p_app_alias     => p_app_alias,
           p_base_url      => p_base_url,
           p_blog_name     => p_blog_name
@@ -463,17 +671,17 @@ AS
       END IF;
     --
       /* Get author details for notification emails */
-      l_author := blog_util.get_article_author(p_article_id);
+      l_author := blog_util.get_article_author(p_page_id);
       --
       /* Send email about new comment to author */
       /* If we have author email and author is active and like have notifications */
       IF  l_author.v_email IS NOT NULL AND l_author.v_email_notify = 'Y'
       THEN
         /* Get article url */
-        l_article_url := blog_util.get_article_url(p_article_id, p_app_alias, p_base_url);
+        l_article_url := blog_util.get_article_url(p_page_id, p_app_alias, p_base_url);
         --
         blog_util.notify_author (
-          p_article_title => p_article_title,
+          p_page_title => p_page_title,
           p_article_url   => l_article_url,
           p_blog_name     => p_blog_name,
           p_author_name   => l_author.v_author_name,
@@ -483,6 +691,11 @@ AS
     END IF;
     /* Refresh comment log */
     dbms_mview.refresh('BLOG_COMMENT_LOG');
+    logger.log('END', l_scope);
+  
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END save_comment;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -495,7 +708,17 @@ AS
     p_comment         IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'save_contact';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_apex_session_id', p_apex_session_id);
+    logger.append_param(l_params, 'p_email', p_email);
+    logger.append_param(l_params, 'p_nick_name', p_nick_name);
+    logger.append_param(l_params, 'p_website', p_website);
+    logger.append_param(l_params, 'p_comment', p_comment);
+    logger.log('START', l_scope, null, l_params);
+
     /* Set APP_USER */
     apex_custom_auth.set_user(upper(p_nick_name));
     /* Insert or update user */
@@ -513,29 +736,45 @@ AS
     ;
      /* Set user id to cookie */
     blog_util.set_cookie(p_user_id);
+    logger.log('END', l_scope);
+  
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END save_contact;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE notify_readers (
     p_comment_id    IN NUMBER,
     p_user_id       IN NUMBER,
-    p_article_id    IN NUMBER,
-    p_article_title IN VARCHAR2,
+    p_page_id    IN NUMBER,
+    p_page_title IN VARCHAR2,
     p_app_alias     IN VARCHAR2,
     p_base_url      IN VARCHAR2,
     p_blog_name     IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'notify_readers';
+    l_params logger.tab_param;
     l_article_url     VARCHAR2(2000);
     l_unsubscribe_url VARCHAR2(2000);
     l_user_email      t_email;
     l_email           t_email;
   BEGIN
+    logger.append_param(l_params, 'p_comment_id', p_comment_id);
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.append_param(l_params, 'p_page_title', p_page_title);
+    logger.append_param(l_params, 'p_app_alias', p_app_alias);
+    logger.append_param(l_params, 'p_base_url', p_base_url);
+    logger.append_param(l_params, 'p_blog_name', p_blog_name);
+    logger.log('START', l_scope, null, l_params);
+
     /* Get article url */
-    l_article_url := blog_util.get_article_url(p_article_id, p_app_alias, p_base_url);
+    l_article_url := blog_util.get_article_url(p_page_id, p_app_alias, p_base_url);
     /* Get email subject and body to variables */
     l_email := blog_util.get_email_message(
-      p_article_title => p_article_title,
+      p_page_title => p_page_title,
       p_article_url   => l_article_url,
       p_blog_name     => p_blog_name,
       p_author_name   => '#AUTHOR_NAME#',
@@ -554,14 +793,14 @@ AS
           SELECT 1
           FROM blog_comment_notify n
           WHERE n.user_id = u.user_id
-          AND n.article_id = p_article_id
+          AND n.article_id = p_page_id
           AND n.followup_notify = 'Y'
           AND n.changed_on > g_watche_expires
         )
         AND EXISTS(
           SELECT 1
           FROM blog_comment c
-          WHERE c.article_id = p_article_id
+          WHERE c.article_id = p_page_id
           AND c.comment_id = p_comment_id
           AND c.active = 'Y'
           AND c.moderated = 'Y'
@@ -571,7 +810,7 @@ AS
       /* User specific unsubscribe url */
       l_unsubscribe_url := blog_util.get_unsubscribe_url(
         p_user_id     => c1.user_id,
-        p_article_id  => p_article_id,
+        p_page_id  => p_page_id,
         p_app_alias   => p_app_alias,
         p_base_url    => p_base_url
       );
@@ -596,45 +835,63 @@ AS
       AND moderated = 'Y'
       AND notify_email_sent = 'N'
     ;
+    logger.log('END', l_scope);
+  
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END notify_readers;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE unsubscribe(
     p_value       IN OUT NOCOPY VARCHAR2,
     p_user_id     OUT NOCOPY NUMBER,
-    p_article_id  OUT NOCOPY NUMBER
+    p_page_id  OUT NOCOPY NUMBER
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'unsubscribe';
+    l_params logger.tab_param;
     l_user_name VARCHAR2(255);
     l_arr       apex_application_global.vc_arr2;
   BEGIN
+    logger.append_param(l_params, 'p_value', p_value);
+    logger.append_param(l_params, 'p_user_id', p_user_id);
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.log('START', l_scope, null, l_params);
+
     l_arr         := blog_util.raw_to_table(p_value);
     p_value       := NULL;
     p_user_id     := l_arr(1);
-    p_article_id  := l_arr(2);
+    p_page_id  := l_arr(2);
     IF p_user_id IS NOT NULL THEN
       l_user_name := blog_util.get_user_name(p_user_id);
     END IF;
     IF p_user_id IS NOT NULL
     AND l_user_name IS NOT NULL
-    AND p_article_id IS NOT NULL
+    AND p_page_id IS NOT NULL
     THEN
       /* Set APP_USER */
       apex_custom_auth.set_user(upper(l_user_name));
       blog_util.save_notify_user(
         p_user_id    => p_user_id,
-        p_article_id => p_article_id,
+        p_page_id => p_page_id,
         p_followup   => 'N'
       );
     ELSE
       blog_util.raise_http_error(p_value);
     END IF;
+    logger.log('END', l_scope);
+
   EXCEPTION WHEN
     NO_DATA_FOUND OR
     INVALID_NUMBER OR
     VALUE_ERROR
   THEN
     blog_util.raise_http_error(p_value);
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params);
+ when others then 
+  logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+  raise;
   END unsubscribe;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -644,6 +901,8 @@ AS
     p_user_id     IN VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'download_file';
+    l_params logger.tab_param;
     l_file_name       VARCHAR2(2000);
     l_utc             TIMESTAMP;
     l_file_cached     BOOLEAN;
@@ -656,6 +915,8 @@ AS
     --PRAGMA EXCEPTION_INIT(SESSION_NOT_VALID, -20001);
     PRAGMA EXCEPTION_INIT(FILE_NOT_ACTIVE, -20002);
   BEGIN
+    logger.append_param(l_params, 'p_file_name', p_file_name);
+    logger.log('START', l_scope, null, l_params);
     /*
     IF NOT apex_custom_auth.is_session_valid THEN
       apex_debug.warn('File download session is not valid: %s', p_session_id);
@@ -718,6 +979,8 @@ AS
     END IF;
     sys.owa_util.http_header_close;
     apex_application.stop_apex_engine;
+    logger.log('END', l_scope);
+
   EXCEPTION WHEN 
     NO_DATA_FOUND
   THEN
@@ -728,6 +991,10 @@ AS
     FILE_NOT_ACTIVE
   THEN
     blog_util.raise_http_error(l_file_name);
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params);
+  when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params);
+    raise;
   END download_file;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -735,11 +1002,16 @@ AS
     p_email     IN VARCHAR2
   ) RETURN BOOLEAN
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'validate_email';
+    l_params logger.tab_param;
     l_is_valid    BOOLEAN := TRUE;
     l_dot_pos     SIMPLE_INTEGER := 0;
     l_at_pos      SIMPLE_INTEGER := 0;
     l_str_length  SIMPLE_INTEGER := 0;
   BEGIN
+    logger.append_param(l_params, 'p_email', p_email);
+    logger.log('START', l_scope, null, l_params);
+
     IF p_email IS NOT NULL THEN
       l_dot_pos     := instr(p_email ,'.');
       l_at_pos      := instr(p_email ,'@');
@@ -761,12 +1033,18 @@ AS
         l_is_valid := NOT instr(substr(p_email ,l_at_pos) ,'.') = 0;
       END IF;
     END IF;
+
+    logger.log('END', l_scope);
     RETURN l_is_valid;
+
+  exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END validate_email;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE get_article_page_items (
-    p_article_id      IN VARCHAR2,
+    p_page_id      IN VARCHAR2,
     p_page_title      OUT NOCOPY VARCHAR2,
     p_region_title    OUT NOCOPY VARCHAR2,
     p_keywords        OUT NOCOPY VARCHAR2,
@@ -776,11 +1054,15 @@ AS
     p_rate            OUT NOCOPY NUMBER    
   ) 
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_article_page_items';
+    l_params logger.tab_param;
     l_article_id    NUMBER;
     l_category_name VARCHAR2(256);
   BEGIN
+    logger.append_param(l_params, 'p_page_id', p_page_id);
+    logger.log('START', l_scope, null, l_params);
     /* Input parameter p_category_id is string because we handle invalid number exception */
-    l_article_id := to_number(p_article_id);
+    l_article_id := to_number(p_page_id);
     SELECT a.article_title,
       a.category_name,
       a.keywords,
@@ -803,15 +1085,22 @@ AS
     p_region_title  := apex_lang.message('REGION_TITLE_COMMENTS');
     p_keywords      := ltrim(trim(BOTH ',' FROM p_keywords) || ',' || l_category_name, ',');
     p_rate          := coalesce(p_rate, 0);
+    logger.log('END', l_scope);
+
   EXCEPTION WHEN 
     NO_DATA_FOUND
   THEN
-    check_http410(p_article_id);
+    check_http410(p_page_id);
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params); 
   WHEN
     INVALID_NUMBER OR
     VALUE_ERROR
   THEN
-    blog_util.raise_http_error(p_article_id);
+    blog_util.raise_http_error(p_page_id);
+    logger.log_error('Exception :'||sqlerrm, l_scope, null, l_params); 
+ when others then 
+  logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+  raise;
   END get_article_page_items;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -822,8 +1111,12 @@ AS
     p_category_name OUT NOCOPY VARCHAR2
   )
   AS
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'get_category_page_items';
+    l_params logger.tab_param;
     l_category_id NUMBER;
   BEGIN
+    logger.append_param(l_params, 'p_category_id', p_category_id);
+    logger.log('START', l_scope, null, l_params);
     /* Input parameter p_category_id is string because we handle invalid number exception */
     l_category_id := to_number(p_category_id);
     SELECT c.category_name
@@ -834,6 +1127,8 @@ AS
     p_page_title    := apex_lang.message('PAGE_TITLE_CATEGORY', p_category_name);
     p_region_title  := apex_lang.message('REGION_TITLE_CATEGORY', apex_escape.html(p_category_name));
     p_category_name := p_category_name;
+    logger.log('END', l_scope);
+
   EXCEPTION WHEN 
     NO_DATA_FOUND
   THEN
@@ -843,6 +1138,9 @@ AS
     VALUE_ERROR
   THEN
     blog_util.raise_http_error(p_category_id);
+  when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
   END get_category_page_items;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
