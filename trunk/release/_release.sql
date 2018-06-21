@@ -31,4 +31,5 @@ set user_name = 'ADMIN',
 end;
 --@trunk/apex/f209021.sql;
 --@trunk/apex/f427.sql;
+@trunk/logger/logger_install.sql;
 /
