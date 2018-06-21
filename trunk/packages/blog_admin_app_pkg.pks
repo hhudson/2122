@@ -12,23 +12,23 @@ AS
     p_table       IN APEX_APPLICATION_GLOBAL.VC_ARR2
   );
 --------------------------------------------------------------------------------
-  PROCEDURE article_to_collection (
+  /*PROCEDURE article_to_collection (
     p_article_id  IN NUMBER
-  );
+  );*/
 --------------------------------------------------------------------------------
-  PROCEDURE save_article_text (
+  /*PROCEDURE save_article_text (
     p_article_id      IN NUMBER,
     p_success_message IN OUT NOCOPY VARCHAR2,
     p_message         IN VARCHAR DEFAULT 'Action Processed.'
-  );
+  );*/
 --------------------------------------------------------------------------------
-  PROCEDURE save_article_preview (
+  /*PROCEDURE save_article_preview (
     p_article_id      IN NUMBER,
     p_author_id       IN NUMBER,
     p_category_id     IN NUMBER,
     p_article_title   IN VARCHAR2,
     p_article_text    IN APEX_APPLICATION_GLOBAL.VC_ARR2
-  );
+  );*/
 --------------------------------------------------------------------------------  
   PROCEDURE create_new_category(
     p_category_name IN VARCHAR2

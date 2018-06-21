@@ -168,7 +168,7 @@ gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
   END table_to_collection;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE article_to_collection (
+  /*PROCEDURE article_to_collection (
     p_article_id IN NUMBER
   )
   AS
@@ -188,10 +188,10 @@ gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
       p_collection_name => g_article_text_collection,
       p_clob001 => l_clob
     );
-  END article_to_collection;
+  END article_to_collection;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE save_article_text (
+  /*PROCEDURE save_article_text (
     p_article_id      IN NUMBER,
     p_success_message IN OUT NOCOPY VARCHAR2,
     p_message         IN VARCHAR DEFAULT 'Action Processed.'
@@ -215,10 +215,10 @@ gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
     IF SQL%ROWCOUNT > 0 THEN
       p_success_message := COALESCE(p_success_message, p_message);
     END IF;
-  END save_article_text;
+  END save_article_text;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE save_article_preview (
+  /*PROCEDURE save_article_preview (
     p_article_id      IN NUMBER,
     p_author_id       IN NUMBER,
     p_category_id     IN NUMBER,
@@ -227,7 +227,7 @@ gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
   )
   AS
   BEGIN
-    /* Hopefully we can someday share collections between applications */
+    
     blog_admin_app.table_to_collection (p_article_text);
     MERGE INTO blog_article_preview a
     USING (
@@ -250,7 +250,7 @@ gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
     INSERT (apex_session_id, author_id, category_id, article_title, article_text)
     VALUES (b.article_id, b.author_id, b.category_id, b.article_title, b.article_text)
     ;
-  END save_article_preview;
+  END save_article_preview;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE create_new_category(

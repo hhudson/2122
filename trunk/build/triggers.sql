@@ -327,14 +327,14 @@ END;
 ALTER TRIGGER blog_author_trg ENABLE;
 /
 
-CREATE OR REPLACE TRIGGER blog_article_trg before
+CREATE OR REPLACE TRIGGER blog_PAGE_trg before
 INSERT OR
 UPDATE OR
-DELETE ON blog_article FOR EACH row
+DELETE ON blog_PAGE FOR EACH row
 BEGIN
   IF inserting THEN
-    IF :NEW.article_id IS NULL THEN
-      :NEW.article_id := blog_sgid;
+    IF :NEW.PAGE_id IS NULL THEN
+      :NEW.PAGE_id := blog_sgid;
     END IF;
     IF :NEW.created_by IS NULL THEN
       :NEW.created_by := COALESCE(v('APP_USER'),USER);
@@ -350,20 +350,20 @@ BEGIN
   END IF;
   IF deleting THEN
     INSERT INTO blog_http410(deleted_id, id_source)
-    VALUES (to_char(:OLD.article_id), 'ARTICLE');
+    VALUES (to_char(:OLD.PAGE_id), 'PAGE');
   ELSE
-    :NEW.article_length := COALESCE(dbms_lob.getlength(:NEW.article_text), 0);
+    :NEW.PAGE_length := COALESCE(dbms_lob.getlength(:NEW.PAGE_text), 0);
   END IF;
 END;
 /
-ALTER TRIGGER blog_article_trg ENABLE;
+ALTER TRIGGER blog_PAGE_trg ENABLE;
 /
 
-CREATE OR REPLACE TRIGGER blog_article_a_trg after
-INSERT ON blog_article FOR EACH row
+CREATE OR REPLACE TRIGGER blog_PAGE_a_trg after
+INSERT ON blog_PAGE FOR EACH row
 BEGIN
-  INSERT INTO blog_article_log(article_id) VALUES(:NEW.article_id);
+  INSERT INTO blog_PAGE_log(PAGE_id) VALUES(:NEW.PAGE_id);
 END;
 /
-ALTER TRIGGER blog_article_a_trg ENABLE;
+ALTER TRIGGER blog_PAGE_a_trg ENABLE;
 /
