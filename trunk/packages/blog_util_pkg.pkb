@@ -337,7 +337,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
 --------------------------------------------------------------------------------
   PROCEDURE save_notify_user (
     p_user_id         IN NUMBER,
-    p_page_id      IN NUMBER,
+    p_page_id         IN NUMBER,
     p_followup        IN VARCHAR2
   )
   AS
