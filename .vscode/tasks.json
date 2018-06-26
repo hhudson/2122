@@ -18,6 +18,7 @@
     // first argument is the database connection string
     // second argument is the file to execute (ie the current file)
     "args": ["blog_workspace/Oradoc_db1@localhost:32122/orclpdb513.localdomain", "@\"${file}\""],
+    //"args": ["sys/Oradoc_db1@localhost:32122/orclpdb513.localdomain as sysdba", "@\"${file}\""],
 
     // do not switch to the output pane automatically
     //"showOutput": "silent",
