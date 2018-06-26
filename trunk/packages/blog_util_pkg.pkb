@@ -75,13 +75,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       email_notify
       INTO l_author
     FROM blog_author u
-    WHERE u.active = 'Y'
-      AND EXISTS(
-      SELECT 1
-      FROM blog_v$article a
-      WHERE a.article_id = p_page_id
-      AND a.author_id = u.author_id
-    );
+    WHERE u.active = 'Y';
     logger.log('END', l_scope);
     RETURN l_author;
   EXCEPTION WHEN
@@ -352,16 +346,16 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     MERGE INTO blog_comment_notify a
     USING (
       SELECT p_user_id AS user_id,
-        p_page_id AS article_id,
+        p_page_id AS page_id,
         p_followup  AS followup_notify
       FROM DUAL
     ) b
-    ON (a.user_id = b.user_id AND a.article_id = b.article_id)
+    ON (a.user_id = b.user_id AND a.page_id = b.page_id)
     WHEN MATCHED THEN
       UPDATE SET a.followup_notify = b.followup_notify
     WHEN NOT MATCHED THEN
-      INSERT (user_id, article_id, followup_notify)
-      VALUES (b.user_id, b.article_id, b.followup_notify)
+      INSERT (user_id, page_id, followup_notify)
+      VALUES (b.user_id, b.page_id, b.followup_notify)
     ;
   
   logger.log('END', l_scope);
@@ -643,7 +637,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     --
     /* Inser comment to table */
     INSERT INTO blog_comment
-    (user_id, apex_session_id, p_page_id, comment_text, moderated)
+    (user_id, apex_session_id, page_id, comment_text, moderated)
     VALUES
     (p_user_id, p_apex_session_id, p_page_id, p_comment , l_publish)
     RETURNING comment_id INTO l_comment_id
@@ -662,8 +656,8 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
         blog_util.notify_readers (
           p_comment_id    => l_comment_id,
           p_user_id       => p_user_id,
-          p_page_id    => p_page_id,
-          p_page_title => p_page_title,
+          p_page_id       => p_page_id,
+          p_page_title    => p_page_title,
           p_app_alias     => p_app_alias,
           p_base_url      => p_base_url,
           p_blog_name     => p_blog_name
@@ -747,8 +741,8 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   PROCEDURE notify_readers (
     p_comment_id    IN NUMBER,
     p_user_id       IN NUMBER,
-    p_page_id    IN NUMBER,
-    p_page_title IN VARCHAR2,
+    p_page_id       IN NUMBER,
+    p_page_title    IN VARCHAR2,
     p_app_alias     IN VARCHAR2,
     p_base_url      IN VARCHAR2,
     p_blog_name     IN VARCHAR2
@@ -793,14 +787,14 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
           SELECT 1
           FROM blog_comment_notify n
           WHERE n.user_id = u.user_id
-          AND n.article_id = p_page_id
+          AND n.page_id = p_page_id
           AND n.followup_notify = 'Y'
           AND n.changed_on > g_watche_expires
         )
         AND EXISTS(
           SELECT 1
           FROM blog_comment c
-          WHERE c.article_id = p_page_id
+          WHERE c.page_id = p_page_id
           AND c.comment_id = p_comment_id
           AND c.active = 'Y'
           AND c.moderated = 'Y'
@@ -1043,7 +1037,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END validate_email;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE get_article_page_items (
+  /*PROCEDURE get_article_page_items (
     p_page_id      IN VARCHAR2,
     p_page_title      OUT NOCOPY VARCHAR2,
     p_region_title    OUT NOCOPY VARCHAR2,
@@ -1056,13 +1050,13 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   AS
     l_scope logger_logs.scope%type := gc_scope_prefix || 'get_article_page_items';
     l_params logger.tab_param;
-    l_article_id    NUMBER;
+    l_page_id    NUMBER;
     l_category_name VARCHAR2(256);
   BEGIN
     logger.append_param(l_params, 'p_page_id', p_page_id);
     logger.log('START', l_scope, null, l_params);
-    /* Input parameter p_category_id is string because we handle invalid number exception */
-    l_article_id := to_number(p_page_id);
+    --Input parameter p_category_id is string because we handle invalid number exception 
+    l_page_id := to_number(p_page_id);
     SELECT a.article_title,
       a.category_name,
       a.keywords,
@@ -1079,8 +1073,8 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       p_rate
     FROM blog_v$article a
     LEFT JOIN blog_article_log l
-    ON a.article_id = l.article_id
-    WHERE a.article_id = l_article_id
+    ON a.page_id = l.page_id
+    WHERE a.page_id = l_page_id
     ;
     p_region_title  := apex_lang.message('REGION_TITLE_COMMENTS');
     p_keywords      := ltrim(trim(BOTH ',' FROM p_keywords) || ',' || l_category_name, ',');
@@ -1101,7 +1095,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
  when others then 
   logger.log_error('Unhandled Exception', l_scope, null, l_params); 
   raise;
-  END get_article_page_items;
+  END get_article_page_items;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE get_category_page_items (

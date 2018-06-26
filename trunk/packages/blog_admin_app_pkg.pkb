@@ -1,7 +1,7 @@
 create or replace PACKAGE BODY  "BLOG_ADMIN_APP" 
 AS
 
-gc_scope_prefix constant varchar2(31) := lower($plsql_unit) || '.';
+gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
 
 --------------------------------------------------------------------------------
   -- Private constants and functions
