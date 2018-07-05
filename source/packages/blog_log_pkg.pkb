@@ -161,7 +161,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END write_activity_log;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE write_article_log(
+  /*PROCEDURE write_article_log(
     p_article_id  IN NUMBER
   )
   AS
@@ -180,10 +180,10 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   INSERT_NULL_VALUE
   THEN
       apex_debug.warn('blog_log.write_article_log(p_article_id => %s); error: %s', COALESCE(to_char(p_article_id), 'NULL'), sqlerrm);
-  END write_article_log;
+  END write_article_log;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE rate_article(
+  /*PROCEDURE rate_article(
     p_article_id    IN NUMBER,
     p_article_rate  IN OUT NOCOPY NUMBER
   )
@@ -199,7 +199,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     RETURNING article_rate_int INTO l_rate
     ;
     sys.htp.prn(l_rate);
-  END rate_article;
+  END rate_article;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE write_category_log(
