@@ -29,7 +29,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END show_entry;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE rss(
+  /*PROCEDURE rss(
     p_app_alias IN VARCHAR2,
     p_blog_name IN VARCHAR2,
     p_base_url  IN VARCHAR2
@@ -82,10 +82,10 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     owa_util.mime_header('application/rss+xml', TRUE);
     wpg_docload.download_file(l_xml);
     apex_application.stop_apex_engine;
-  END rss;
+  END rss;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE sitemap(
+  /*PROCEDURE sitemap(
     p_app_id    IN NUMBER,
     p_app_alias IN VARCHAR2,
     p_base_url  IN VARCHAR2,
@@ -155,7 +155,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     owa_util.mime_header('application/xml', TRUE);
     wpg_docload.download_file(l_xml);
     apex_application.stop_apex_engine;
-  END sitemap;
+  END sitemap;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 END "BLOG_XML";

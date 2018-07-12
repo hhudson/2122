@@ -10,18 +10,18 @@ AS
     p_condition_expression2   IN VARCHAR2
   ) RETURN VARCHAR2;
 --------------------------------------------------------------------------------
-  PROCEDURE rss(
+  /*PROCEDURE rss(
     p_app_alias IN VARCHAR2,
     p_blog_name IN VARCHAR2,
     p_base_url  IN VARCHAR2
-  );
+  );*/
 --------------------------------------------------------------------------------
-  PROCEDURE sitemap(
+  /*PROCEDURE sitemap(
     p_app_id    IN NUMBER,
     p_app_alias IN VARCHAR2,
     p_base_url  IN VARCHAR2,
     p_tab_list  IN VARCHAR2
-  );
+  );*/
 --------------------------------------------------------------------------------
 END "BLOG_XML";
 /

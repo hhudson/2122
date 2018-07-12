@@ -9,7 +9,7 @@ AS
 --------------------------------------------------------------------------------
   PROCEDURE update_activity_logs;
 --------------------------------------------------------------------------------
-  PROCEDURE purge_preview;
+  --PROCEDURE purge_preview;
 --------------------------------------------------------------------------------
   PROCEDURE rotate_log_job (
     p_drop_job IN BOOLEAN DEFAULT FALSE,

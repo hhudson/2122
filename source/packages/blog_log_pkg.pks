@@ -24,14 +24,14 @@ AS
     p_additional_info IN VARCHAR2 DEFAULT NULL
   );
 --------------------------------------------------------------------------------
-  PROCEDURE write_article_log(
+  /*PROCEDURE write_article_log(
     p_article_id      IN NUMBER
-  );
+  );*/
 --------------------------------------------------------------------------------
-  PROCEDURE rate_article(
+  /*PROCEDURE rate_article(
     p_article_id      IN NUMBER,
     p_article_rate    IN OUT NOCOPY NUMBER
-  );
+  );*/
 --------------------------------------------------------------------------------
   PROCEDURE write_category_log(
     p_category_id     IN NUMBER

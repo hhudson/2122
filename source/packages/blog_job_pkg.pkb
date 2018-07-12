@@ -172,16 +172,16 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END update_activity_logs;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE purge_preview
+  /*PROCEDURE purge_preview
   AS
   BEGIN
-    /* Delete from blog_article_preview rows where session is expired */
+    -- Delete from blog_article_preview rows where session is expired
     DELETE FROM blog_article_preview p
     WHERE NOT EXISTS (
       SELECT 1 FROM apex_workspace_sessions s
       WHERE s.apex_session_id = p.apex_session_id
     );
-  END purge_preview;
+  END purge_preview;*/
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE rotate_log_job(
