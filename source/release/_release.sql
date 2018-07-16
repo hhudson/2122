@@ -1,3 +1,4 @@
+@initial_setup/prereqs.sql;
 @source/logger/logger_install.sql;
 @source/build/create_tables.sql;
 @source/build/create_indexes.sql;
