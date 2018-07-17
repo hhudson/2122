@@ -55,33 +55,11 @@ AS
     p_page_id      OUT NOCOPY NUMBER
   );
 --------------------------------------------------------------------------------
-  PROCEDURE download_file (
-    p_file_name       IN VARCHAR2,
-    p_session_id      IN NUMBER,
-    p_user_id         IN VARCHAR2
-  );
---------------------------------------------------------------------------------
+  
   FUNCTION validate_email (
     p_email           IN VARCHAR2
   ) RETURN BOOLEAN;
 --------------------------------------------------------------------------------
-  /*PROCEDURE get_page_page_items (
-    p_page_id      IN VARCHAR2,
-    p_page_title      OUT NOCOPY VARCHAR2,
-    p_region_title    OUT NOCOPY VARCHAR2,
-    p_keywords        OUT NOCOPY VARCHAR2,
-    p_description     OUT NOCOPY VARCHAR2,
-    p_author_name     OUT NOCOPY VARCHAR2,
-    p_twitter_follow  OUT NOCOPY VARCHAR2,
-    p_rate            OUT NOCOPY NUMBER
-  );*/
---------------------------------------------------------------------------------
-  PROCEDURE get_category_page_items (
-    p_category_id     IN VARCHAR2,
-    p_page_title      OUT NOCOPY VARCHAR2,
-    p_region_title    OUT NOCOPY VARCHAR2,
-    p_category_name   OUT NOCOPY VARCHAR2
-  );
---------------------------------------------------------------------------------
+  
 END "BLOG_UTIL";
 /

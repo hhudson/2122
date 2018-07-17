@@ -1,27 +1,3 @@
-CREATE OR REPLACE TRIGGER blog_resource_trg before
-INSERT OR
-UPDATE ON blog_resource FOR EACH row
-BEGIN
-  IF inserting THEN
-    IF :NEW.link_id IS NULL THEN
-      :NEW.link_id := blog_sgid;
-    END IF;
-    IF :NEW.created_by IS NULL THEN
-      :NEW.created_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-    IF :NEW.changed_by IS NULL THEN
-      :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-  END IF;
-  IF updating THEN
-    :NEW.changed_on := SYSDATE;
-    :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-  END IF;
-END;
-/
-ALTER TRIGGER blog_resource_trg ENABLE;
-/
-
 CREATE OR REPLACE TRIGGER blog_param_trg before
 INSERT OR
 UPDATE ON blog_param FOR EACH row
@@ -42,61 +18,6 @@ END;
 /
 ALTER TRIGGER blog_param_trg ENABLE;
 /
-
-CREATE OR REPLACE TRIGGER blog_long_text_trg before
-INSERT OR
-UPDATE ON blog_long_text FOR EACH row
-BEGIN
-  IF inserting THEN
-    IF :NEW.created_by IS NULL THEN
-      :NEW.created_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-    IF :NEW.changed_by IS NULL THEN
-      :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-  END IF;
-  IF updating THEN
-    :NEW.changed_on := SYSDATE;
-    :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-  END IF;
-END;
-/
-ALTER TRIGGER blog_long_text_trg ENABLE;
-/
-
-CREATE OR REPLACE TRIGGER blog_file_trg before
- INSERT OR
- UPDATE OR
- DELETE ON blog_file FOR EACH row
-BEGIN
-  IF inserting THEN
-    IF :NEW.file_id IS NULL THEN
-      :NEW.file_id := blog_sgid;
-    END IF;
-    IF :NEW.created_by IS NULL THEN
-      :NEW.created_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-    IF :NEW.changed_by IS NULL THEN
-      :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-  END IF;
-  IF updating THEN
-    :NEW.changed_on := SYSDATE;
-    :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-  END IF;
-  IF deleting THEN
-    INSERT INTO blog_http410(deleted_id, id_source)
-    VALUES (:OLD.file_name, 'FILE');
-  ELSE
-    :NEW.file_etag := :NEW.file_id || TO_CHAR(SYS_EXTRACT_UTC(CAST(:NEW.changed_on AS TIMESTAMP)), 'JHH24MISS');
-    :NEW.file_modified_since := TO_CHAR(SYS_EXTRACT_UTC(CAST(:NEW.changed_on AS TIMESTAMP)), 'Dy, DD Mon YYYY HH24:MI:SS "GMT"', 'NLS_DATE_LANGUAGE=ENGLISH');
-    :NEW.file_size := COALESCE(dbms_lob.getlength(:NEW.blob_content), 0);
-  END IF;
-END;
-/
-ALTER TRIGGER blog_file_trg ENABLE;
-/
-
 CREATE OR REPLACE TRIGGER blog_faq_trg before
  INSERT OR
  UPDATE ON blog_faq FOR EACH row
@@ -143,6 +64,7 @@ BEGIN
 END;
 /
 ALTER TRIGGER blog_contact_message_trg ENABLE;
+
 /
 
 CREATE OR REPLACE TRIGGER blog_comment_user_trg before
@@ -213,6 +135,7 @@ BEGIN
 END;
 /
 ALTER TRIGGER blog_comment_trg ENABLE;
+
 /
 
 CREATE OR REPLACE TRIGGER blog_comment_notify_trg before
@@ -258,35 +181,7 @@ BEGIN
 END;
 /
 ALTER TRIGGER blog_comment_block_trg ENABLE;
-/
 
-CREATE OR REPLACE TRIGGER blog_category_trg before
-INSERT OR
-UPDATE OR
-DELETE ON blog_category FOR EACH row
-BEGIN
-  IF inserting THEN
-    IF :NEW.category_id IS NULL THEN
-      :NEW.category_id := blog_sgid;
-    END IF;
-    IF :NEW.created_by IS NULL THEN
-      :NEW.created_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-    IF :NEW.changed_by IS NULL THEN
-      :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-  END IF;
-  IF updating THEN
-    :NEW.changed_on := SYSDATE;
-    :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-  END IF;
-  IF deleting THEN
-    INSERT INTO blog_http410(deleted_id, id_source)
-    VALUES (to_char(:OLD.category_id), 'CATEGORY');
-  END IF;
-END;
-/
-ALTER TRIGGER blog_category_trg ENABLE;
 /
 
 CREATE OR REPLACE TRIGGER blog_author_trg before
@@ -325,45 +220,4 @@ BEGIN
 END;
 /
 ALTER TRIGGER blog_author_trg ENABLE;
-/
-
-CREATE OR REPLACE TRIGGER blog_PAGE_trg before
-INSERT OR
-UPDATE OR
-DELETE ON blog_PAGE FOR EACH row
-BEGIN
-  IF inserting THEN
-    IF :NEW.PAGE_id IS NULL THEN
-      :NEW.PAGE_id := blog_sgid;
-    END IF;
-    IF :NEW.created_by IS NULL THEN
-      :NEW.created_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-    IF :NEW.changed_by IS NULL THEN
-      :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-    END IF;
-    :NEW.year_month_num := TO_NUMBER(TO_CHAR(:NEW.created_on,'YYYYMM'));
-  END IF;
-  IF updating THEN
-    :NEW.changed_on := SYSDATE;
-    :NEW.changed_by := COALESCE(v('APP_USER'),USER);
-  END IF;
-  IF deleting THEN
-    INSERT INTO blog_http410(deleted_id, id_source)
-    VALUES (to_char(:OLD.PAGE_id), 'PAGE');
-  ELSE
-    :NEW.PAGE_length := COALESCE(dbms_lob.getlength(:NEW.PAGE_text), 0);
-  END IF;
-END;
-/
-ALTER TRIGGER blog_PAGE_trg ENABLE;
-/
-
-CREATE OR REPLACE TRIGGER blog_PAGE_a_trg after
-INSERT ON blog_PAGE FOR EACH row
-BEGIN
-  INSERT INTO blog_PAGE_log(PAGE_id) VALUES(:NEW.PAGE_id);
-END;
-/
-ALTER TRIGGER blog_PAGE_a_trg ENABLE;
 /

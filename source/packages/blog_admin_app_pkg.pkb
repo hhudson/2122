@@ -168,91 +168,6 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END table_to_collection;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  /*PROCEDURE article_to_collection (
-    p_article_id IN NUMBER
-  )
-  AS
-    l_clob CLOB;
-  BEGIN
-    apex_collection.create_or_truncate_collection(g_article_text_collection);
-    BEGIN
-      SELECT article_text
-      INTO l_clob
-      FROM blog_article
-      WHERE article_id = p_article_id
-      ;
-    EXCEPTION WHEN NO_DATA_FOUND THEN
-      l_clob := NULL;
-    END;
-    apex_collection.add_member(
-      p_collection_name => g_article_text_collection,
-      p_clob001 => l_clob
-    );
-  END article_to_collection;*/
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-  /*PROCEDURE save_article_text (
-    p_article_id      IN NUMBER,
-    p_success_message IN OUT NOCOPY VARCHAR2,
-    p_message         IN VARCHAR DEFAULT 'Action Processed.'
-  )
-  AS
-  BEGIN
-    MERGE INTO blog_article a
-    USING (
-      SELECT p_article_id AS article_id,
-        clob001
-      FROM apex_collections
-      WHERE collection_name = g_article_text_collection
-        AND seq_id  = 1
-    ) b
-    ON (a.article_id = b.article_id)
-    WHEN MATCHED THEN
-    UPDATE SET a.article_text = b.clob001
-    WHERE sys.dbms_lob.compare(a.article_text, b.clob001) != 0
-      OR sys.dbms_lob.compare(a.article_text, b.clob001) IS NULL
-    ;
-    IF SQL%ROWCOUNT > 0 THEN
-      p_success_message := COALESCE(p_success_message, p_message);
-    END IF;
-  END save_article_text;*/
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-  /*PROCEDURE save_article_preview (
-    p_article_id      IN NUMBER,
-    p_author_id       IN NUMBER,
-    p_category_id     IN NUMBER,
-    p_article_title   IN VARCHAR2,
-    p_article_text    IN APEX_APPLICATION_GLOBAL.VC_ARR2
-  )
-  AS
-  BEGIN
-    
-    blog_admin_app.table_to_collection (p_article_text);
-    MERGE INTO blog_article_preview a
-    USING (
-      SELECT p_article_id AS article_id,
-        p_author_id       AS author_id,
-        p_category_id     AS category_id,
-        p_article_title   AS article_title,
-        clob001           AS article_text
-      FROM apex_collections
-      WHERE collection_name = g_article_text_collection
-        AND seq_id  = 1
-    ) b
-    ON (a.apex_session_id = b.article_id)
-    WHEN MATCHED THEN
-    UPDATE SET a.article_text = b.article_text,
-      a.author_id             = b.author_id,
-      a.category_id           = b.category_id,
-      a.article_title         = b.article_title
-    WHEN NOT MATCHED THEN
-    INSERT (apex_session_id, author_id, category_id, article_title, article_text)
-    VALUES (b.article_id, b.author_id, b.category_id, b.article_title, b.article_text)
-    ;
-  END save_article_preview;*/
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
   PROCEDURE create_new_category(
     p_category_name IN VARCHAR2
   )
@@ -314,22 +229,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     SET a.author_seq = b.new_seq
     ;
   END cleanup_author_sequence;
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-  PROCEDURE cleanup_resource_sequence
-  AS
-  BEGIN
-    MERGE INTO blog_resource a
-    USING (
-      SELECT c.link_id,
-        ROW_NUMBER() OVER(PARTITION BY c.link_type ORDER BY c.link_seq) * 10 AS new_seq
-      FROM blog_resource c
-    ) b
-    ON (a.link_id = b.link_id)
-    WHEN MATCHED THEN UPDATE 
-    SET a.link_seq = b.new_seq
-    ;
-  END cleanup_resource_sequence;
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION get_next_category_seq RETURN NUMBER
@@ -366,21 +266,6 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     ;
     RETURN l_max;
   END get_next_faq_seq;
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-  FUNCTION get_next_resource_seq (
-    p_link_type IN VARCHAR2
-  ) RETURN NUMBER
-  AS
-    l_max  NUMBER;
-  BEGIN
-    SELECT CEIL(COALESCE(MAX(link_seq) + 1, 1) / 10) * 10
-    INTO l_max
-    FROM blog_resource
-    WHERE link_type = p_link_type
-    ;
-    RETURN l_max;
-  END get_next_resource_seq;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   FUNCTION set_param_value_item (

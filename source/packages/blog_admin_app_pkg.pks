@@ -11,24 +11,6 @@ AS
   PROCEDURE table_to_collection (
     p_table       IN APEX_APPLICATION_GLOBAL.VC_ARR2
   );
---------------------------------------------------------------------------------
-  /*PROCEDURE article_to_collection (
-    p_article_id  IN NUMBER
-  );*/
---------------------------------------------------------------------------------
-  /*PROCEDURE save_article_text (
-    p_article_id      IN NUMBER,
-    p_success_message IN OUT NOCOPY VARCHAR2,
-    p_message         IN VARCHAR DEFAULT 'Action Processed.'
-  );*/
---------------------------------------------------------------------------------
-  /*PROCEDURE save_article_preview (
-    p_article_id      IN NUMBER,
-    p_author_id       IN NUMBER,
-    p_category_id     IN NUMBER,
-    p_article_title   IN VARCHAR2,
-    p_article_text    IN APEX_APPLICATION_GLOBAL.VC_ARR2
-  );*/
 --------------------------------------------------------------------------------  
   PROCEDURE create_new_category(
     p_category_name IN VARCHAR2
@@ -40,17 +22,13 @@ AS
 --------------------------------------------------------------------------------
   PROCEDURE cleanup_author_sequence;
 --------------------------------------------------------------------------------
-  PROCEDURE cleanup_resource_sequence;
+  --PROCEDURE cleanup_resource_sequence;
 --------------------------------------------------------------------------------
   FUNCTION get_next_category_seq RETURN NUMBER;
 --------------------------------------------------------------------------------
   FUNCTION get_next_author_seq RETURN NUMBER;
 --------------------------------------------------------------------------------
   FUNCTION get_next_faq_seq RETURN NUMBER;
---------------------------------------------------------------------------------
-  FUNCTION get_next_resource_seq (
-    p_link_type IN VARCHAR2
-  ) RETURN NUMBER;
 --------------------------------------------------------------------------------
   FUNCTION set_param_value_item (
     p_param_id          IN VARCHAR2,

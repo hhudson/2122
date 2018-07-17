@@ -161,47 +161,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END write_activity_log;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  /*PROCEDURE write_article_log(
-    p_article_id  IN NUMBER
-  )
-  AS
-    PRAGMA AUTONOMOUS_TRANSACTION;
-  BEGIN
-    UPDATE blog_article_log
-    SET view_count = view_count + 1,
-        last_view = SYSDATE
-    WHERE article_id = p_article_id
-    ;
-    COMMIT;
-  EXCEPTION WHEN 
-  VALUE_ERROR OR
-  INVALID_NUMBER OR
-  PARENT_NOT_FOUND OR
-  INSERT_NULL_VALUE
-  THEN
-      apex_debug.warn('blog_log.write_article_log(p_article_id => %s); error: %s', COALESCE(to_char(p_article_id), 'NULL'), sqlerrm);
-  END write_article_log;*/
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-  /*PROCEDURE rate_article(
-    p_article_id    IN NUMBER,
-    p_article_rate  IN OUT NOCOPY NUMBER
-  )
-  AS
-    l_rate NUMBER;
-  BEGIN
-    UPDATE blog_article_log
-      SET article_rate      = (article_rate * rate_click + p_article_rate) / (rate_click + 1),
-          article_rate_int  = ROUND( (article_rate * rate_click + p_article_rate) / (rate_click + 1) ),
-          rate_click        = rate_click + 1,
-          last_rate         = SYSDATE
-    WHERE article_id = p_article_id
-    RETURNING article_rate_int INTO l_rate
-    ;
-    sys.htp.prn(l_rate);
-  END rate_article;*/
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+  
   PROCEDURE write_category_log(
     p_category_id  IN NUMBER
   )
@@ -228,31 +188,6 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END write_category_log;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE write_file_log(
-    p_file_id  IN NUMBER
-  )
-  AS
-    PRAGMA AUTONOMOUS_TRANSACTION;
-  BEGIN
-    MERGE INTO blog_file_log a
-    USING (SELECT p_file_id AS file_id FROM DUAL) b
-    ON (a.file_id = b.file_id)
-    WHEN MATCHED THEN
-    UPDATE SET a.click_count = a.click_count + 1,
-      last_click = SYSDATE
-    WHEN NOT MATCHED THEN
-    INSERT (file_id) VALUES (b.file_id)
-    ;
-    COMMIT;
-  EXCEPTION WHEN
-  VALUE_ERROR OR
-  INVALID_NUMBER OR
-  PARENT_NOT_FOUND OR
-  INSERT_NULL_VALUE
-  THEN
-    apex_debug.warn('blog_log.write_file_log(p_file_id => %s); error: %s', COALESCE(to_char(p_file_id), 'NULL'), sqlerrm);
-  END write_file_log;
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+  
 END "BLOG_LOG";
 /

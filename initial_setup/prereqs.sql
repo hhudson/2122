@@ -1,4 +1,7 @@
 -- SESSION PRIVILEGES
+set serveroutput on
+whenever sqlerror exit
+
 declare
     type t_sess_privs is table of pls_integer index by varchar2(50);
     l_sess_privs t_sess_privs;
@@ -45,5 +48,24 @@ begin
     if l_priv_error then
       raise_application_error (-20000, 'One or more required privileges are missing.');
     end if;
+end;
+/
+--LOGGER
+declare
+l_cnt integer;
+begin
+  execute immediate 'select count(*) from logger_logs' into l_cnt;
+
+  dbms_output.put_line('_____________________________________________________________________________');
+  dbms_output.put_line('Logger appears to have been installed. Great.');
+  dbms_output.put_line('_____________________________________________________________________________');
+  
+exception when OTHERS then
+    if SQLCODE=-942 THEN
+        --dbms_output.put_line('Error: Logger not installed. Please install before continuing.');
+        raise_application_error (-20001, 'Error: Logger not installed. Please install before continuing.');
+    else 
+        dbms_output.put_line('Other error :'||SQLERRM);
+    end if;    
 end;
 /

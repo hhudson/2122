@@ -1,4 +1,4 @@
-set define off
+set define off;
 create or replace PACKAGE BODY  "BLOG_PLUGIN" 
 AS
 --------------------------------------------------------------------------------

@@ -10,7 +10,7 @@ email
 ) VALUES (
 'admin@bexample.org'
 ,'ADMIN'
-,blog_pw_hash('ADMIN','admin')
+,blog_pw_hash('ADMIN','Oradoc_db1')
 ,'Administrator'
 ,1
 ,'<p>'
