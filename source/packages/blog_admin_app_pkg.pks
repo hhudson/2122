@@ -51,6 +51,11 @@ AS
     p_password IN VARCHAR2
   ) RETURN BOOLEAN;
 --------------------------------------------------------------------------------
+procedure change_password(
+    p_username IN VARCHAR2,
+    p_password IN VARCHAR2
+  );
+--------------------------------------------------------------------------------
   PROCEDURE post_login;
 --------------------------------------------------------------------------------
   FUNCTION is_developer RETURN PLS_INTEGER;

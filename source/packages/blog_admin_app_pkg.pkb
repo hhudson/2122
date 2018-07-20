@@ -320,28 +320,40 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     AUTH_INTERNAL_ERROR     CONSTANT INTEGER      := 7;
     l_password              VARCHAR2(4000);
     l_stored_password       VARCHAR2(4000);
+    l_username              VARCHAR2(1000);
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'login';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_username', p_username);
+    logger.log('START', l_scope, null, l_params);
+    --make sure username is uppercase
+    l_username := upper(p_username);
     -- First, check to see if the user is in the user table and have password
     BEGIN
       SELECT passwd
       INTO l_stored_password
       FROM blog_author
-      WHERE user_name = p_username
+      WHERE user_name = l_username
       AND active = 'Y'
       AND passwd IS NOT NULL
       ;
     EXCEPTION WHEN NO_DATA_FOUND THEN
+      logger.log_error('NO_DATA_FOUND Exception', l_scope, null, l_params);
       APEX_UTIL.SET_AUTHENTICATION_RESULT(AUTH_UNKNOWN_USER);
       RETURN FALSE;
     END;
     -- Apply the custom hash function to the password
-    l_password := blog_pw_hash(p_username, p_password);
+    l_password := blog_pw_hash(l_username, p_password);
     -- Compare them to see if they are the same and return either TRUE or FALSE
     IF l_password = l_stored_password THEN
+      logger.log('Success!', l_scope, null, l_params);
       APEX_UTIL.SET_AUTHENTICATION_RESULT(AUTH_SUCCESS);
+      logger.log('END', l_scope);
       RETURN TRUE;
     END IF;
+    logger.log('Failure!', l_scope, null, l_params);
     APEX_UTIL.SET_AUTHENTICATION_RESULT(AUTH_PASSWORD_INCORRECT);
+    logger.log('END', l_scope);
     RETURN FALSE;
   END login;
 --------------------------------------------------------------------------------
@@ -353,27 +365,62 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   AS
     l_password              VARCHAR2(4000);
     l_stored_password       VARCHAR2(4000);
+    l_username              VARCHAR2(1000);
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'check_password';
+    l_params logger.tab_param;
   BEGIN
+    logger.append_param(l_params, 'p_username', p_username);
+    logger.log('START', l_scope, null, l_params);
+    l_username := upper(p_username);
     -- First, check to see if the user is in the user table and have password
     BEGIN
       SELECT passwd
       INTO l_stored_password
       FROM blog_author
-      WHERE user_name = p_username
+      WHERE user_name = l_username
       AND active = 'Y'
       AND passwd IS NOT NULL
       ;
     EXCEPTION WHEN NO_DATA_FOUND THEN
+      logger.log_error('NO_DATA_FOUND Exception', l_scope, null, l_params);
       RETURN FALSE;
     END;
     -- Apply the custom hash function to the password
-    l_password := blog_pw_hash(p_username, p_password);
+    l_password := blog_pw_hash(l_username, p_password);
     -- Compare them to see if they are the same and return either TRUE or FALSE
     IF l_password = l_stored_password THEN
+      logger.log('Success!', l_scope, null, l_params);
       RETURN TRUE;
     END IF;
+    logger.log('Failure!', l_scope, null, l_params);
     RETURN FALSE;
   END check_password;
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+procedure change_password(
+    p_username IN VARCHAR2,
+    p_password IN VARCHAR2
+  )
+  IS
+    l_password              VARCHAR2(4000);
+    l_stored_password       VARCHAR2(4000);
+    l_username              VARCHAR2(1000);
+    l_scope                 logger_logs.scope%type := gc_scope_prefix || 'change_password';
+    l_params                logger.tab_param;
+  BEGIN
+    logger.append_param(l_params, 'p_username', p_username);
+    logger.log('START', l_scope, null, l_params);
+    l_username := upper(p_username);
+    -- Apply the custom hash function to the password
+    l_password := blog_pw_hash(l_username, p_password);
+    update blog_author
+      set passwd = l_password
+      where user_name = l_username;
+    logger.log('END', l_scope);
+exception when others then 
+  logger.log_error('Unhandled Exception :'||SQLERRM, l_scope, null, l_params); 
+   raise;
+end change_password;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE post_login
