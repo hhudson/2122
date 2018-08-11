@@ -3,8 +3,6 @@ AS
 --------------------------------------------------------------------------------
 --the below is part of logger best practices
 gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -213,12 +211,17 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     l_key := l_arr.FIRST;
     -- Substitude message
     WHILE l_key IS NOT NULL LOOP
+      logger.log('l_key not null, therefore prepping email.', l_scope, null, l_params);
       l_email.v_subj := regexp_replace( l_email.v_subj, l_key, l_arr(l_key), 1, 0, 'i' );
+      logger.log('l_email.v_sub :'||l_email.v_subj, l_scope, null, l_params);
       l_email.v_body := regexp_replace( l_email.v_body, l_key, l_arr(l_key), 1, 0, 'i' );
+      logger.log('l_email.v_body :'||l_email.v_body, l_scope, null, l_params);
       l_key := l_arr.NEXT(l_key);
+      logger.log('l_key :'||l_key, l_scope, null, l_params);
     END LOOP;
     /* Get blog email */
     l_email.v_from := blog_util.get_param_value('BLOG_EMAIL');
+    logger.log('l_email.v_from :'||l_email.v_from, l_scope, null, l_params);
     --
     logger.log('END', l_scope);
     RETURN l_email;
@@ -385,8 +388,9 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     logger.log('START', l_scope, null, l_params);
 
     /* Get email subject and body to variable */
+    logger.log('About to fetch the parameters for the email.', l_scope, null, l_params);
     l_email := blog_util.get_email_message(
-      p_page_title => p_page_title,
+      p_page_title    => p_page_title,
       p_article_url   => p_article_url,
       p_blog_name     => p_blog_name,
       p_author_name   => p_author_name,
@@ -394,14 +398,20 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       p_body          => 'NEW_COMMENT_EMAIL_BODY'
     );
     /* Send mail to author */
+    logger.log('About to send the email to :'||p_author_email, l_scope, null, l_params);
+    logger.log('The email should be from :'||l_email.v_from, l_scope, null, l_params);
+    logger.log('l_email.v_subj :'||l_email.v_subj, l_scope, null, l_params);
+    logger.log('l_email.v_body :'||l_email.v_body, l_scope, null, l_params);
     apex_mail.send (
       p_from => l_email.v_from,
       p_to   => p_author_email,
       p_subj => l_email.v_subj,
       p_body => l_email.v_body
     );
+    logger.log('The email should have been added to the APEX MAIL queue.', l_scope, null, l_params);
     /* we do have time wait email sending */
-    --APEX_MAIL.PUSH_QUEUE;
+    APEX_MAIL.PUSH_QUEUE;
+    logger.log('The queue has been pushed.', l_scope, null, l_params);
   logger.log('END', l_scope);
   exception when others then 
     logger.log_error('Unhandled Exception', l_scope, null, l_params); 
@@ -503,7 +513,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     FROM blog_param
     WHERE param_id = p_param_id
     ;
-
+    logger.log('l_value :'||l_value, l_scope, null, l_params);
     logger.log('END', l_scope);
     RETURN l_value;
   
@@ -593,6 +603,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       p_website     => p_website
     );
     /* Save should user be notified when new comment is posted */
+    
     blog_util.save_notify_user(
       p_user_id     => p_user_id,
       p_page_id     => p_page_id,
@@ -603,7 +614,10 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     --
     /* Should author moderate comment before it is published */
     IF NOT apex_authorization.is_authorized('MODERATION_ENABLED') THEN
+      logger.log('MODERATION_ENABLED not turned on.', l_scope, null, l_params);
       l_publish := 'Y';
+    else
+      logger.log('MODERATION_ENABLED turned on so it should publish immediately.', l_scope, null, l_params);
     END IF;
     --
     /* Inser comment to table */
@@ -624,6 +638,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     /* Send email about new comment to readers */
     IF apex_authorization.is_authorized('NOTIFICATION_EMAIL_ENABLED') THEN
       IF l_publish = 'Y' THEN
+        logger.log('Moderation is not emailed so it immediately publishes the comment and notifies readers.', l_scope, null, l_params);
         blog_util.notify_readers (
           p_comment_id    => l_comment_id,
           p_user_id       => p_user_id,
@@ -633,6 +648,8 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
           p_base_url      => p_base_url,
           p_blog_name     => p_blog_name
         );
+      ELSE 
+        logger.log('Moderation is emailed so readers are not immediately notified.', l_scope, null, l_params);
       END IF;
     --
       /* Get author details for notification emails */
@@ -642,6 +659,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       /* If we have author email and author is active and like have notifications */
       IF  l_author.v_email IS NOT NULL AND l_author.v_email_notify = 'Y'
       THEN
+        logger.log('Prepping to notify the blog author @ :'||l_author.v_email, l_scope, null, l_params);
         /* Get article url */
         l_article_url := blog_util.get_article_url(p_page_id, p_app_alias, p_base_url);
         --
@@ -652,6 +670,8 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
           p_author_name   => l_author.v_author_name,
           p_author_email  => l_author.v_email
         );
+      else 
+        logger.log('Settings prevent notifying the blog author @ :'||l_author.v_email, l_scope, null, l_params);
       END IF;
     END IF;
     /* Refresh comment log */
