@@ -20,7 +20,7 @@ begin
     logger.log('START', l_scope, null, l_params);
     
     l_url := 'https://us18.api.mailchimp.com/3.0/lists/8f79153475/merge-fields';
-    l_token := '186cc40d3bc8e3ce51d8ffe49452d676-us18';
+    l_token := '[token]';
 
     apex_json.initialize_clob_output;
     apex_json.open_object;       
