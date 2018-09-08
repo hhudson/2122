@@ -264,3 +264,13 @@ COMMENT ON COLUMN BLOG_PARAM.PARAM_GROUP IS 'Values defined in blog admin app PA
 /
 COMMENT ON COLUMN BLOG_PARAM.PARAM_USE_SKILL IS 'Values defined in blog admin app PARAM_USE_SKILL list of values'
 /
+create table blog_email_template (template_id integer primary key, email_html clob, created_date date default sysdate);
+/
+create table blog_posts (
+page_id integer primary key, 
+email_list_id varchar2(50) not null enable,
+CREATED_ON DATE DEFAULT SYSDATE NOT NULL ENABLE,
+CREATED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE,
+CHANGED_ON DATE DEFAULT SYSDATE NOT NULL ENABLE,
+CHANGED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE);
+/

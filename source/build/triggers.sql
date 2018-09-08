@@ -221,3 +221,27 @@ END;
 /
 ALTER TRIGGER blog_author_trg ENABLE;
 /
+CREATE OR REPLACE TRIGGER blog_posts_trg before
+ INSERT OR
+ UPDATE ON blog_posts FOR EACH row
+BEGIN
+  IF inserting THEN
+    IF :NEW.email_list_id IS NULL THEN
+       :NEW.email_list_id := blog_mailchimp_pkg.create_list (p_list_name           => :NEW.page_id||'_list', 
+                                                             p_permission_reminder => 'You are receiving this email because you commented on this blog post.');
+    END IF;
+    IF :NEW.created_by IS NULL THEN
+      :NEW.created_by := COALESCE(v('APP_USER'), USER);
+    END IF;
+    IF :NEW.changed_by IS NULL THEN
+      :NEW.changed_by := COALESCE(v('APP_USER'), USER);
+    END IF;
+  END IF;
+  IF updating THEN
+    :NEW.changed_on := SYSDATE;
+    :NEW.changed_by := COALESCE(v('APP_USER'), USER);
+  END IF;
+END;
+/
+ALTER TRIGGER blog_posts_trg ENABLE;
+/

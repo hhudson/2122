@@ -1,25 +1,43 @@
 create or replace package blog_mailchimp_pkg as 
+--create a new mailing list
+function create_list (p_list_name           in varchar2, --- the name you want to give your new mailing list
+                      p_permission_reminder in varchar2) --- a sentence to remind your recipients how they got on this mailing list
+                      return varchar2; --------------------- the resulting id of the newly created list & a confirmation that the operation was successful
+
+-- add a subscriber to a subscriber list
+procedure add_subscriber (  p_list_id in varchar2, --- the id of the list you are adding a subscriber to
+                            p_email   in varchar2, --- the email of the new subscriber
+                            p_fname   in varchar2, --- the 1st name of this subscriber
+                            p_lname   in varchar2, --- the last name of this subscriber
+                            p_success out boolean); -- a confirmation of that adding the subscriber was successful
 
 --create a new merge_field
-procedure create_merge_field(p_list_id  in varchar2,
-                             p_name     in varchar2,
-                             p_merge_id out integer,
-                             p_tag      out varchar2);
+procedure create_merge_field(p_list_id     in varchar2, --- the id of the list that would make use of this merge id
+                             p_merge_field in varchar2, --- the name you want to give the merge variable
+                             p_merge_id    out integer,
+                             p_tag         out varchar2);
 
 --update the default value of an existing merge_field
-procedure update_merge_field (p_list_id     in varchar2, ---the id of the list
-                              p_merge_id    in number,   ---the id of the merge field
-                              p_merge_field in varchar2, ---the name of the merge field
-                              p_merge_value in varchar2, --the value you want to pass into the email
+procedure update_merge_field (p_list_id     in varchar2, --- the id of the list
+                              p_merge_id    in number,   --- the id of the merge field
+                              p_merge_field in varchar2, --- the name of the merge field
+                              p_merge_value in varchar2, --- the value you want to pass into the email
                               p_success     out boolean);
 
+--create a new template
+procedure create_template ( p_template_name in  varchar2, --- the name you want to give the template
+                            p_html          in  clob, ------- the html of the email template
+                            p_template_id   out integer); --- the id of the newly created template
+
+-- update an existing template
+procedure update_template ( p_template_id in integer, ----- the id of the pre-existing Mailchimp template that you wish to edit
+                            p_html        in clob, -------- the html that you wish to pass into the above specified template
+                            p_success     out boolean); --- a confirmation of whether the operation was successful
 --create a new email campaign
 procedure create_campaign ( p_list_id      in varchar2,
                             p_subject_line in varchar2,
                             p_title        in varchar2,
                             p_template_id  in number,
-                            p_reply_to     in varchar2,
-                            p_from_name    in varchar2,
                             p_send_url     out varchar2);
 
 --send email campaign
