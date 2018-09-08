@@ -1,5 +1,6 @@
 
 
+prompt --application/set_environment
 set define off verify off feedback off
 whenever sqlerror exit sql.sqlcode rollback
 --------------------------------------------------------------------------------
@@ -15,26 +16,25 @@ whenever sqlerror exit sql.sqlcode rollback
 begin
 wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2016.08.24'
-,p_release=>'5.1.3.00.05'
+,p_release=>'5.1.4.00.08'
 ,p_default_workspace_id=>1833259176032110
 ,p_default_application_id=>209021
 ,p_default_owner=>'BLOG_WORKSPACE'
 );
 end;
 /
-prompt --application/set_environment
  
 prompt APPLICATION 209021 - Blog Administration
 --
 -- Application Export:
 --   Application:     209021
 --   Name:            Blog Administration
---   Date and Time:   21:41 Friday July 20, 2018
+--   Date and Time:   23:38 Saturday September 8, 2018
 --   Exported By:     BLOG_WORKSPACE
 --   Flashback:       0
 --   Export Type:     Application Export
---   Version:         5.1.3.00.05
---   Instance ID:     218204478567741
+--   Version:         5.1.4.00.08
+--   Instance ID:     218280828013074
 --
 
 -- Application Statistics:
@@ -131,7 +131,7 @@ wwv_flow_api.create_flow(
 ,p_auto_time_zone=>'N'
 ,p_error_handling_function=>'blog_log.apex_error_handler'
 ,p_last_updated_by=>'ADMIN'
-,p_last_upd_yyyymmddhh24miss=>'20180720213934'
+,p_last_upd_yyyymmddhh24miss=>'20180908231616'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -10790,11 +10790,6 @@ wwv_flow_api.create_authentication(
 );
 end;
 /
-prompt --application/ui_types
-begin
-null;
-end;
-/
 prompt --application/shared_components/plugins/authorization_type/org_blogsite_jaris_feature_authorization
 begin
 wwv_flow_api.create_plugin(
@@ -15674,7 +15669,7 @@ wwv_flow_api.create_page(
 ,p_cache_timeout_seconds=>21600
 ,p_help_text=>'Publish new articles or edit existing ones. Report shows also statistic about articles.'
 ,p_last_updated_by=>'ADMIN'
-,p_last_upd_yyyymmddhh24miss=>'20180619220116'
+,p_last_upd_yyyymmddhh24miss=>'20180908231616'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(1880816086085301)
@@ -15686,12 +15681,13 @@ wwv_flow_api.create_page_plug(
 ,p_include_in_reg_disp_sel_yn=>'Y'
 ,p_plug_display_point=>'BODY_3'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
-'select PAGE_ID, PAGE_NAME, PAGE_ALIAS, HEADER_TEXT, FOOTER_TEXT, AUTHORIZATION_SCHEME, BUILD_OPTION, CREATED_ON, LAST_UPDATED_ON, PAGE_GROUP',
-'from  APEX_APPLICATION_PAGES',
-'where workspace = ''BLOG_WORKSPACE''',
-'AND APPLICATION_NAME=''Blog''',
-'and page_mode = ''Normal''',
-'and page_group <> ''Administrative'''))
+'select ap.PAGE_ID, bp.email_list_id, ap.PAGE_NAME, ap.PAGE_ALIAS, ap.HEADER_TEXT, ap.FOOTER_TEXT, ap.AUTHORIZATION_SCHEME, ap.BUILD_OPTION, ap.CREATED_ON, ap.LAST_UPDATED_ON, ap.PAGE_GROUP',
+'from  blog_posts bp ',
+'left outer join APEX_APPLICATION_PAGES ap on bp.page_id = ap.page_id',
+'where ap.workspace = ''BLOG_WORKSPACE''',
+'AND ap.APPLICATION_NAME=''Blog''',
+'and ap.page_mode = ''Normal''',
+'and ap.page_group <> ''Administrative'''))
 ,p_plug_source_type=>'NATIVE_IR'
 ,p_plug_query_row_template=>1
 ,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
@@ -15824,6 +15820,14 @@ wwv_flow_api.create_worksheet_column(
 ,p_column_label=>'Footer text'
 ,p_column_type=>'STRING'
 );
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2184400370242332)
+,p_db_column_name=>'EMAIL_LIST_ID'
+,p_display_order=>840
+,p_column_identifier=>'CF'
+,p_column_label=>'Email list id'
+,p_column_type=>'STRING'
+);
 wwv_flow_api.create_worksheet_rpt(
  p_id=>wwv_flow_api.id(1888391269088584)
 ,p_application_user=>'APXWS_DEFAULT'
@@ -15832,7 +15836,7 @@ wwv_flow_api.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_display_rows=>50
-,p_report_columns=>'PAGE_ID:PAGE_NAME:PAGE_ALIAS:HEADER_TEXT:AUTHORIZATION_SCHEME:BUILD_OPTION:PAGE_GROUP:CREATED_ON:LAST_UPDATED_ON:FOOTER_TEXT'
+,p_report_columns=>'PAGE_ID:PAGE_NAME:PAGE_ALIAS:HEADER_TEXT:AUTHORIZATION_SCHEME:BUILD_OPTION:PAGE_GROUP:CREATED_ON:LAST_UPDATED_ON:FOOTER_TEXT:EMAIL_LIST_ID'
 ,p_flashback_enabled=>'N'
 );
 end;
@@ -24885,6 +24889,7 @@ wwv_flow_api.create_page(
 ,p_autocomplete_on_off=>'OFF'
 ,p_group_id=>wwv_flow_api.id(39886985382211021037)
 ,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
 ,p_overwrite_navigation_list=>'N'
 ,p_page_is_public_y_n=>'N'
 ,p_cache_mode=>'NOCACHE'
