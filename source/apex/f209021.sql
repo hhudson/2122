@@ -1,6 +1,3 @@
-
-
-prompt --application/set_environment
 set define off verify off feedback off
 whenever sqlerror exit sql.sqlcode rollback
 --------------------------------------------------------------------------------
@@ -17,7 +14,7 @@ begin
 wwv_flow_api.import_begin (
  p_version_yyyy_mm_dd=>'2016.08.24'
 ,p_release=>'5.1.4.00.08'
-,p_default_workspace_id=>1833259176032110
+,p_default_workspace_id=>1830853804202731
 ,p_default_application_id=>209021
 ,p_default_owner=>'BLOG_WORKSPACE'
 );
@@ -29,7 +26,7 @@ prompt APPLICATION 209021 - Blog Administration
 -- Application Export:
 --   Application:     209021
 --   Name:            Blog Administration
---   Date and Time:   23:38 Saturday September 8, 2018
+--   Date and Time:   14:33 Monday October 15, 2018
 --   Exported By:     BLOG_WORKSPACE
 --   Flashback:       0
 --   Export Type:     Application Export
@@ -38,12 +35,12 @@ prompt APPLICATION 209021 - Blog Administration
 --
 
 -- Application Statistics:
---   Pages:                     36
---     Items:                  118
+--   Pages:                     39
+--     Items:                  119
 --     Computations:            17
 --     Validations:             19
 --     Processes:               62
---     Regions:                 46
+--     Regions:                 49
 --     Buttons:                 64
 --     Dynamic Actions:         23
 --   Shared Components:
@@ -114,7 +111,7 @@ wwv_flow_api.create_flow(
 ,p_direction_right_to_left=>'N'
 ,p_flow_image_prefix => nvl(wwv_flow_application_install.get_image_prefix,'')
 ,p_authentication=>'PLUGIN'
-,p_authentication_id=>wwv_flow_api.id(40024264861357095209)
+,p_authentication_id=>wwv_flow_api.id(19779786015643023)
 ,p_application_tab_set=>0
 ,p_logo_image=>'TEXT:&G_BLOG_NAME.'
 ,p_public_user=>'APEX_PUBLIC_USER'
@@ -131,7 +128,7 @@ wwv_flow_api.create_flow(
 ,p_auto_time_zone=>'N'
 ,p_error_handling_function=>'blog_log.apex_error_handler'
 ,p_last_updated_by=>'ADMIN'
-,p_last_upd_yyyymmddhh24miss=>'20180908231616'
+,p_last_upd_yyyymmddhh24miss=>'20181015143254'
 ,p_file_prefix => nvl(wwv_flow_application_install.get_static_app_file_prefix,'')
 ,p_ui_type_name => null
 );
@@ -305,6 +302,24 @@ wwv_flow_api.create_list_item(
 ,p_parent_list_item_id=>wwv_flow_api.id(1847359524347245)
 ,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
 ,p_list_item_current_for_pages=>'108,5'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(1867575227167900)
+,p_list_item_display_sequence=>300
+,p_list_item_link_text=>'Blog Subscribers'
+,p_list_item_link_target=>'f?p=&APP_ID.:3:&SESSION.::&DEBUG.'
+,p_parent_list_item_id=>wwv_flow_api.id(1847359524347245)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'3'
+);
+wwv_flow_api.create_list_item(
+ p_id=>wwv_flow_api.id(1900937130948994)
+,p_list_item_display_sequence=>310
+,p_list_item_link_text=>'Email history'
+,p_list_item_link_target=>'f?p=&APP_ID.:7:&SESSION.::&DEBUG.'
+,p_parent_list_item_id=>wwv_flow_api.id(1847359524347245)
+,p_list_item_current_type=>'COLON_DELIMITED_PAGE_LIST'
+,p_list_item_current_for_pages=>'7'
 );
 wwv_flow_api.create_list(
  p_id=>wwv_flow_api.id(39883457599669499363)
@@ -1066,11 +1081,6 @@ wwv_flow_api.create_page_group(
  p_id=>wwv_flow_api.id(39886991768274035905)
 ,p_group_name=>'User'
 );
-end;
-/
-prompt --application/comments
-begin
-null;
 end;
 /
 prompt --application/shared_components/navigation/breadcrumbs/breadcrumb
@@ -14859,6 +14869,253 @@ wwv_flow_api.create_page_plug(
 );
 end;
 /
+prompt --application/pages/page_00002
+begin
+wwv_flow_api.create_page(
+ p_id=>2
+,p_user_interface_id=>wwv_flow_api.id(40024261339842052158)
+,p_name=>'Subscribers'
+,p_page_mode=>'MODAL'
+,p_step_title=>'Subscribers'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_autocomplete_on_off=>'OFF'
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_height=>'650'
+,p_dialog_width=>'900'
+,p_dialog_chained=>'Y'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_last_updated_by=>'ADMIN'
+,p_last_upd_yyyymmddhh24miss=>'20181015143254'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(2184731177242335)
+,p_plug_name=>'List of subscribers'
+,p_region_template_options=>'#DEFAULT#'
+,p_component_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(1889415051100774)
+,p_plug_display_sequence=>20
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>'select * from table(blog_mailchimp_pkg.get_list_of_subscribers(p_list_id => :P2_LIST_ID))'
+,p_plug_source_type=>'NATIVE_IR'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_prn_content_disposition=>'ATTACHMENT'
+,p_prn_document_header=>'APEX'
+,p_prn_units=>'INCHES'
+,p_prn_paper_size=>'LETTER'
+,p_prn_width=>8.5
+,p_prn_height=>11
+,p_prn_orientation=>'HORIZONTAL'
+,p_prn_page_header_font_color=>'#000000'
+,p_prn_page_header_font_family=>'Helvetica'
+,p_prn_page_header_font_weight=>'normal'
+,p_prn_page_header_font_size=>'12'
+,p_prn_page_footer_font_color=>'#000000'
+,p_prn_page_footer_font_family=>'Helvetica'
+,p_prn_page_footer_font_weight=>'normal'
+,p_prn_page_footer_font_size=>'12'
+,p_prn_header_bg_color=>'#9bafde'
+,p_prn_header_font_color=>'#000000'
+,p_prn_header_font_family=>'Helvetica'
+,p_prn_header_font_weight=>'normal'
+,p_prn_header_font_size=>'10'
+,p_prn_body_bg_color=>'#efefef'
+,p_prn_body_font_color=>'#000000'
+,p_prn_body_font_family=>'Helvetica'
+,p_prn_body_font_weight=>'normal'
+,p_prn_body_font_size=>'10'
+,p_prn_border_width=>.5
+,p_prn_page_header_alignment=>'CENTER'
+,p_prn_page_footer_alignment=>'CENTER'
+);
+wwv_flow_api.create_worksheet(
+ p_id=>wwv_flow_api.id(2184881889242336)
+,p_max_row_count=>'1000000'
+,p_show_nulls_as=>'-'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_download_formats=>'CSV:HTML:EMAIL:XLS:PDF:RTF'
+,p_owner=>'ADMIN'
+,p_internal_uid=>2184881889242336
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2184994466242337)
+,p_db_column_name=>'EMAIL_ADDRESS'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Email address'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185020385242338)
+,p_db_column_name=>'FIRST_NAME'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'First name'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185197471242339)
+,p_db_column_name=>'LAST_NAME'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Last name'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185291271242340)
+,p_db_column_name=>'STATUS'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Status'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_rpt(
+ p_id=>wwv_flow_api.id(1863871474074304)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'18639'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_display_rows=>50
+,p_report_columns=>'EMAIL_ADDRESS:FIRST_NAME:LAST_NAME:STATUS'
+,p_flashback_enabled=>'N'
+);
+wwv_flow_api.create_page_item(
+ p_id=>wwv_flow_api.id(2184612041242334)
+,p_name=>'P2_LIST_ID'
+,p_item_sequence=>10
+,p_item_plug_id=>wwv_flow_api.id(2184731177242335)
+,p_display_as=>'NATIVE_HIDDEN'
+,p_attribute_01=>'N'
+);
+end;
+/
+prompt --application/pages/page_00003
+begin
+wwv_flow_api.create_page(
+ p_id=>3
+,p_user_interface_id=>wwv_flow_api.id(40024261339842052158)
+,p_name=>'Blog Subscribers'
+,p_page_mode=>'NORMAL'
+,p_step_title=>'Blog Subscribers'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_autocomplete_on_off=>'OFF'
+,p_group_id=>wwv_flow_api.id(39886985280133020389)
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_last_updated_by=>'ADMIN'
+,p_last_upd_yyyymmddhh24miss=>'20180912020232'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(2185440825242342)
+,p_plug_name=>'Blog subscribers'
+,p_region_template_options=>'#DEFAULT#'
+,p_component_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(1889415051100774)
+,p_plug_display_sequence=>60
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY_1'
+,p_plug_source=>'select * from table(blog_mailchimp_pkg.get_list_of_subscribers(p_list_id => ''3ece62edf9''))'
+,p_plug_source_type=>'NATIVE_IR'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_prn_content_disposition=>'ATTACHMENT'
+,p_prn_document_header=>'APEX'
+,p_prn_units=>'INCHES'
+,p_prn_paper_size=>'LETTER'
+,p_prn_width=>8.5
+,p_prn_height=>11
+,p_prn_orientation=>'HORIZONTAL'
+,p_prn_page_header_font_color=>'#000000'
+,p_prn_page_header_font_family=>'Helvetica'
+,p_prn_page_header_font_weight=>'normal'
+,p_prn_page_header_font_size=>'12'
+,p_prn_page_footer_font_color=>'#000000'
+,p_prn_page_footer_font_family=>'Helvetica'
+,p_prn_page_footer_font_weight=>'normal'
+,p_prn_page_footer_font_size=>'12'
+,p_prn_header_bg_color=>'#9bafde'
+,p_prn_header_font_color=>'#000000'
+,p_prn_header_font_family=>'Helvetica'
+,p_prn_header_font_weight=>'normal'
+,p_prn_header_font_size=>'10'
+,p_prn_body_bg_color=>'#efefef'
+,p_prn_body_font_color=>'#000000'
+,p_prn_body_font_family=>'Helvetica'
+,p_prn_body_font_weight=>'normal'
+,p_prn_body_font_size=>'10'
+,p_prn_border_width=>.5
+,p_prn_page_header_alignment=>'CENTER'
+,p_prn_page_footer_alignment=>'CENTER'
+);
+wwv_flow_api.create_worksheet(
+ p_id=>wwv_flow_api.id(2185535748242343)
+,p_max_row_count=>'1000000'
+,p_show_nulls_as=>'-'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_download_formats=>'CSV:HTML:EMAIL:XLS:PDF:RTF'
+,p_owner=>'ADMIN'
+,p_internal_uid=>2185535748242343
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185618165242344)
+,p_db_column_name=>'EMAIL_ADDRESS'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Email address'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185764069242345)
+,p_db_column_name=>'FIRST_NAME'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'First name'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185801795242346)
+,p_db_column_name=>'LAST_NAME'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Last name'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2185921050242347)
+,p_db_column_name=>'STATUS'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Status'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_rpt(
+ p_id=>wwv_flow_api.id(1869621372171558)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'18697'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_display_rows=>50
+,p_report_columns=>'EMAIL_ADDRESS:FIRST_NAME:LAST_NAME:STATUS'
+,p_flashback_enabled=>'N'
+);
+end;
+/
 prompt --application/pages/page_00004
 begin
 wwv_flow_api.create_page(
@@ -15602,6 +15859,201 @@ wwv_flow_api.create_page_process(
 );
 end;
 /
+prompt --application/pages/page_00007
+begin
+wwv_flow_api.create_page(
+ p_id=>7
+,p_user_interface_id=>wwv_flow_api.id(40024261339842052158)
+,p_name=>'Email history'
+,p_page_mode=>'NORMAL'
+,p_step_title=>'Email history'
+,p_step_sub_title_type=>'TEXT_WITH_SUBSTITUTIONS'
+,p_first_item=>'NO_FIRST_ITEM'
+,p_autocomplete_on_off=>'OFF'
+,p_page_template_options=>'#DEFAULT#'
+,p_dialog_chained=>'Y'
+,p_overwrite_navigation_list=>'N'
+,p_page_is_public_y_n=>'N'
+,p_cache_mode=>'NOCACHE'
+,p_last_updated_by=>'ADMIN'
+,p_last_upd_yyyymmddhh24miss=>'20180915153143'
+);
+wwv_flow_api.create_page_plug(
+ p_id=>wwv_flow_api.id(2186037576242348)
+,p_plug_name=>'Email history'
+,p_region_template_options=>'#DEFAULT#'
+,p_component_template_options=>'#DEFAULT#'
+,p_plug_template=>wwv_flow_api.id(1889415051100774)
+,p_plug_display_sequence=>10
+,p_include_in_reg_disp_sel_yn=>'Y'
+,p_plug_display_point=>'BODY'
+,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
+'select *',
+'from table(blog_mailchimp_pkg.get_campaign_history)',
+'where campaign_id is not null'))
+,p_plug_source_type=>'NATIVE_IR'
+,p_plug_query_options=>'DERIVED_REPORT_COLUMNS'
+,p_prn_content_disposition=>'ATTACHMENT'
+,p_prn_document_header=>'APEX'
+,p_prn_units=>'INCHES'
+,p_prn_paper_size=>'LETTER'
+,p_prn_width=>8.5
+,p_prn_height=>11
+,p_prn_orientation=>'HORIZONTAL'
+,p_prn_page_header_font_color=>'#000000'
+,p_prn_page_header_font_family=>'Helvetica'
+,p_prn_page_header_font_weight=>'normal'
+,p_prn_page_header_font_size=>'12'
+,p_prn_page_footer_font_color=>'#000000'
+,p_prn_page_footer_font_family=>'Helvetica'
+,p_prn_page_footer_font_weight=>'normal'
+,p_prn_page_footer_font_size=>'12'
+,p_prn_header_bg_color=>'#9bafde'
+,p_prn_header_font_color=>'#000000'
+,p_prn_header_font_family=>'Helvetica'
+,p_prn_header_font_weight=>'normal'
+,p_prn_header_font_size=>'10'
+,p_prn_body_bg_color=>'#efefef'
+,p_prn_body_font_color=>'#000000'
+,p_prn_body_font_family=>'Helvetica'
+,p_prn_body_font_weight=>'normal'
+,p_prn_body_font_size=>'10'
+,p_prn_border_width=>.5
+,p_prn_page_header_alignment=>'CENTER'
+,p_prn_page_footer_alignment=>'CENTER'
+);
+wwv_flow_api.create_worksheet(
+ p_id=>wwv_flow_api.id(2186137821242349)
+,p_max_row_count=>'1000000'
+,p_show_nulls_as=>'-'
+,p_pagination_type=>'ROWS_X_TO_Y'
+,p_pagination_display_pos=>'BOTTOM_RIGHT'
+,p_report_list_mode=>'TABS'
+,p_show_detail_link=>'N'
+,p_show_notify=>'Y'
+,p_download_formats=>'CSV:HTML:EMAIL:XLS:PDF:RTF'
+,p_owner=>'ADMIN'
+,p_internal_uid=>2186137821242349
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(2186274170242350)
+,p_db_column_name=>'CAMPAIGN_ID'
+,p_display_order=>10
+,p_column_identifier=>'A'
+,p_column_label=>'Campaign id'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901303401954001)
+,p_db_column_name=>'EMAILS_SENT'
+,p_display_order=>20
+,p_column_identifier=>'B'
+,p_column_label=>'Emails sent'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901439082954002)
+,p_db_column_name=>'SEND_TIME'
+,p_display_order=>30
+,p_column_identifier=>'C'
+,p_column_label=>'Send time'
+,p_column_type=>'DATE'
+,p_column_alignment=>'CENTER'
+,p_tz_dependent=>'N'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901548697954003)
+,p_db_column_name=>'RECIPIENT_LIST_ID'
+,p_display_order=>40
+,p_column_identifier=>'D'
+,p_column_label=>'Recipient list id'
+,p_column_link=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:RP:P2_LIST_ID:#RECIPIENT_LIST_ID#'
+,p_column_linktext=>'View recipients'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901693535954004)
+,p_db_column_name=>'TEMPLATE_ID'
+,p_display_order=>50
+,p_column_identifier=>'E'
+,p_column_label=>'Template id'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901744120954005)
+,p_db_column_name=>'SUBJECT_LINE'
+,p_display_order=>60
+,p_column_identifier=>'F'
+,p_column_label=>'Subject line'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901816690954006)
+,p_db_column_name=>'FROM_NAME'
+,p_display_order=>70
+,p_column_identifier=>'G'
+,p_column_label=>'From name'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1901918797954007)
+,p_db_column_name=>'OPENS'
+,p_display_order=>80
+,p_column_identifier=>'H'
+,p_column_label=>'Opens'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1902090377954008)
+,p_db_column_name=>'UNIQUE_OPENS'
+,p_display_order=>90
+,p_column_identifier=>'I'
+,p_column_label=>'Unique opens'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1902105077954009)
+,p_db_column_name=>'OPEN_RATE'
+,p_display_order=>100
+,p_column_identifier=>'J'
+,p_column_label=>'Open rate'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1902276136954010)
+,p_db_column_name=>'CLICKS'
+,p_display_order=>110
+,p_column_identifier=>'K'
+,p_column_label=>'Clicks'
+,p_column_type=>'NUMBER'
+,p_column_alignment=>'RIGHT'
+);
+wwv_flow_api.create_worksheet_column(
+ p_id=>wwv_flow_api.id(1902340530954011)
+,p_db_column_name=>'CANCEL_SEND'
+,p_display_order=>120
+,p_column_identifier=>'L'
+,p_column_label=>'Cancel send'
+,p_column_type=>'STRING'
+);
+wwv_flow_api.create_worksheet_rpt(
+ p_id=>wwv_flow_api.id(1910482616955142)
+,p_application_user=>'APXWS_DEFAULT'
+,p_report_seq=>10
+,p_report_alias=>'19105'
+,p_status=>'PUBLIC'
+,p_is_default=>'Y'
+,p_display_rows=>50
+,p_report_columns=>'SUBJECT_LINE:EMAILS_SENT:SEND_TIME:OPENS:UNIQUE_OPENS:OPEN_RATE:CLICKS:RECIPIENT_LIST_ID:'
+,p_flashback_enabled=>'N'
+);
+end;
+/
 prompt --application/pages/page_00010
 begin
 wwv_flow_api.create_page(
@@ -15669,7 +16121,7 @@ wwv_flow_api.create_page(
 ,p_cache_timeout_seconds=>21600
 ,p_help_text=>'Publish new articles or edit existing ones. Report shows also statistic about articles.'
 ,p_last_updated_by=>'ADMIN'
-,p_last_upd_yyyymmddhh24miss=>'20180908231616'
+,p_last_upd_yyyymmddhh24miss=>'20181015143227'
 );
 wwv_flow_api.create_page_plug(
  p_id=>wwv_flow_api.id(1880816086085301)
@@ -15682,8 +16134,8 @@ wwv_flow_api.create_page_plug(
 ,p_plug_display_point=>'BODY_3'
 ,p_plug_source=>wwv_flow_string.join(wwv_flow_t_varchar2(
 'select ap.PAGE_ID, bp.email_list_id, ap.PAGE_NAME, ap.PAGE_ALIAS, ap.HEADER_TEXT, ap.FOOTER_TEXT, ap.AUTHORIZATION_SCHEME, ap.BUILD_OPTION, ap.CREATED_ON, ap.LAST_UPDATED_ON, ap.PAGE_GROUP',
-'from  blog_posts bp ',
-'left outer join APEX_APPLICATION_PAGES ap on bp.page_id = ap.page_id',
+'from  APEX_APPLICATION_PAGES ap ',
+'left outer join blog_posts bp  on bp.page_id = ap.page_id',
 'where ap.workspace = ''BLOG_WORKSPACE''',
 'AND ap.APPLICATION_NAME=''Blog''',
 'and ap.page_mode = ''Normal''',
@@ -15825,7 +16277,9 @@ wwv_flow_api.create_worksheet_column(
 ,p_db_column_name=>'EMAIL_LIST_ID'
 ,p_display_order=>840
 ,p_column_identifier=>'CF'
-,p_column_label=>'Email list id'
+,p_column_label=>'Blog comment subscribers'
+,p_column_link=>'f?p=&APP_ID.:2:&SESSION.::&DEBUG.:RP,2:P2_LIST_ID:#EMAIL_LIST_ID#'
+,p_column_linktext=>'View subscribers'
 ,p_column_type=>'STRING'
 );
 wwv_flow_api.create_worksheet_rpt(
@@ -15836,7 +16290,7 @@ wwv_flow_api.create_worksheet_rpt(
 ,p_status=>'PUBLIC'
 ,p_is_default=>'Y'
 ,p_display_rows=>50
-,p_report_columns=>'PAGE_ID:PAGE_NAME:PAGE_ALIAS:HEADER_TEXT:AUTHORIZATION_SCHEME:BUILD_OPTION:PAGE_GROUP:CREATED_ON:LAST_UPDATED_ON:FOOTER_TEXT:EMAIL_LIST_ID'
+,p_report_columns=>'PAGE_ID:PAGE_NAME:PAGE_ALIAS:HEADER_TEXT:BUILD_OPTION:PAGE_GROUP:CREATED_ON:LAST_UPDATED_ON:FOOTER_TEXT:EMAIL_LIST_ID:'
 ,p_flashback_enabled=>'N'
 );
 end;

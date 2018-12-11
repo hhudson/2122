@@ -338,8 +338,11 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     p_followup        IN VARCHAR2
   )
   AS
-    l_scope logger_logs.scope%type := gc_scope_prefix || 'save_notify_user';
-    l_params logger.tab_param;
+    l_scope            logger_logs.scope%type := gc_scope_prefix || 'save_notify_user';
+    l_params           logger.tab_param;
+    l_success          boolean;
+    l_list_id          varchar2(50);
+    l_comment_user_rec blog_comment_user%rowtype;
   BEGIN
     logger.append_param(l_params, 'p_user_id', p_user_id);
     logger.append_param(l_params, 'p_page_id', p_page_id);
@@ -360,6 +363,43 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       INSERT (user_id, page_id, followup_notify)
       VALUES (b.user_id, b.page_id, b.followup_notify)
     ;
+
+    if p_followup = 'Y' then
+      begin
+        select email_list_id
+          into l_list_id
+          from blog_posts
+          where page_id = p_page_id;
+      exception when no_data_found then 
+        logger.log_error('No data found in blog_posts table?', l_scope, null, l_params); 
+        raise;
+      end;
+
+      begin
+        select *
+          into l_comment_user_rec
+          from blog_comment_user
+          where user_id = p_user_id;
+        
+      exception when no_data_found then 
+        logger.log_error('No data found in blog_comment_user table?', l_scope, null, l_params); 
+        raise;
+      end;
+
+      blog_mailchimp_pkg.add_subscriber ( p_list_id => l_list_id, --- the id of the list you are adding a subscriber to
+                                          p_email   => l_comment_user_rec.email, --- the email of the new subscriber
+                                          p_fname   => l_comment_user_rec.nick_name, --- the 1st name of this subscriber
+                                          p_lname   => null, --- the last name of this subscriber
+                                          p_success => l_success);
+      if l_success then
+        logger.log('Subscriber successfully added.', l_scope, null, l_params);
+      else 
+        logger.log('Subscriber not added for unknown reason.', l_scope, null, l_params);
+      end if;
+
+  else 
+    logger.log('No followup requested from blog commenter.', l_scope, null, l_params);
+  end if;
   
   logger.log('END', l_scope);
   exception when others then 
@@ -617,7 +657,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       logger.log('MODERATION_ENABLED not turned on.', l_scope, null, l_params);
       l_publish := 'Y';
     else
-      logger.log('MODERATION_ENABLED turned on so it should publish immediately.', l_scope, null, l_params);
+      logger.log('MODERATION_ENABLED turned on so it should not publish immediately.', l_scope, null, l_params);
     END IF;
     --
     /* Inser comment to table */
@@ -627,6 +667,11 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     (p_user_id, p_apex_session_id, p_page_id, p_comment , l_publish)
     RETURNING comment_id INTO l_comment_id
     ;
+
+    notify_blog_commenters (
+          p_comment_id    => l_comment_id,
+          p_page_id       => p_page_id
+        ); --hhh : just testing. I should really figure out the below.
     --
     /* Update user id to activity log */
     UPDATE blog_activity_log
@@ -638,18 +683,14 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     /* Send email about new comment to readers */
     IF apex_authorization.is_authorized('NOTIFICATION_EMAIL_ENABLED') THEN
       IF l_publish = 'Y' THEN
-        logger.log('Moderation is not emailed so it immediately publishes the comment and notifies readers.', l_scope, null, l_params);
-        blog_util.notify_readers (
+        logger.log('Moderation is not enabled so it immediately publishes the comment and notifies readers.', l_scope, null, l_params);
+        
+        notify_blog_commenters (
           p_comment_id    => l_comment_id,
-          p_user_id       => p_user_id,
-          p_page_id       => p_page_id,
-          p_page_title    => p_page_title,
-          p_app_alias     => p_app_alias,
-          p_base_url      => p_base_url,
-          p_blog_name     => p_blog_name
+          p_page_id       => p_page_id
         );
       ELSE 
-        logger.log('Moderation is emailed so readers are not immediately notified.', l_scope, null, l_params);
+        logger.log('Moderation is enabled so readers are not immediately notified.', l_scope, null, l_params);
       END IF;
     --
       /* Get author details for notification emails */
@@ -664,7 +705,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
         l_article_url := blog_util.get_article_url(p_page_id, p_app_alias, p_base_url);
         --
         blog_util.notify_author (
-          p_page_title => p_page_title,
+          p_page_title    => p_page_title,
           p_article_url   => l_article_url,
           p_blog_name     => p_blog_name,
           p_author_name   => l_author.v_author_name,
@@ -729,90 +770,160 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
   END save_contact;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-  PROCEDURE notify_readers (
+
+  PROCEDURE notify_blog_commenters (
     p_comment_id    IN NUMBER,
-    p_user_id       IN NUMBER,
-    p_page_id       IN NUMBER,
-    p_page_title    IN VARCHAR2,
-    p_app_alias     IN VARCHAR2,
-    p_base_url      IN VARCHAR2,
-    p_blog_name     IN VARCHAR2
+    p_page_id       IN NUMBER
   )
   AS
-    l_scope logger_logs.scope%type := gc_scope_prefix || 'notify_readers';
+    l_scope logger_logs.scope%type := gc_scope_prefix || 'notify_blog_commenters';
     l_params logger.tab_param;
     l_article_url     VARCHAR2(2000);
     l_unsubscribe_url VARCHAR2(2000);
     l_user_email      t_email;
     l_email           t_email;
+    l_list_id         varchar2(50);
+    l_post_name       varchar2(200);
+    l_post_name_count integer;
+    l_comment_count   integer;
+    l_comment_txt     varchar2(2000);
+    l_template_id     integer := 39405; --this is the template from mailchimp
+    l_merge_id        integer;
+    l_tag             varchar2(100);
+    l_success0        boolean;
+    l_success         boolean;
+    l_success1        boolean;
+    l_success2        boolean;
+    l_send_url        varchar2(1000);
   BEGIN
     logger.append_param(l_params, 'p_comment_id', p_comment_id);
-    logger.append_param(l_params, 'p_user_id', p_user_id);
     logger.append_param(l_params, 'p_page_id', p_page_id);
-    logger.append_param(l_params, 'p_page_title', p_page_title);
-    logger.append_param(l_params, 'p_app_alias', p_app_alias);
-    logger.append_param(l_params, 'p_base_url', p_base_url);
-    logger.append_param(l_params, 'p_blog_name', p_blog_name);
     logger.log('START', l_scope, null, l_params);
 
-    /* Get article url */
-    l_article_url := blog_util.get_article_url(p_page_id, p_app_alias, p_base_url);
-    /* Get email subject and body to variables */
-    l_email := blog_util.get_email_message(
-      p_page_title => p_page_title,
-      p_article_url   => l_article_url,
-      p_blog_name     => p_blog_name,
-      p_author_name   => '#AUTHOR_NAME#',
-      p_subj          => 'FOLLOWUP_EMAIL_SUBJ',
-      p_body          => 'FOLLOWUP_EMAIL_BODY'
-    );
-    /* Loop trough all users that like have notification */
-    FOR c1 IN (
-      SELECT email,
-        nick_name,
-        user_id
-      FROM blog_comment_user u
-      WHERE u.user_id != p_user_id
-        AND u.blocked = 'N'
-        AND EXISTS(
-          SELECT 1
-          FROM blog_comment_notify n
-          WHERE n.user_id = u.user_id
-          AND n.page_id = p_page_id
-          AND n.followup_notify = 'Y'
-          AND n.changed_on > g_watche_expires
-        )
-        AND EXISTS(
-          SELECT 1
-          FROM blog_comment c
-          WHERE c.page_id = p_page_id
-          AND c.comment_id = p_comment_id
-          AND c.active = 'Y'
-          AND c.moderated = 'Y'
-          AND c.notify_email_sent = 'N'
-        )
-    ) LOOP
-      /* User specific unsubscribe url */
-      l_unsubscribe_url := blog_util.get_unsubscribe_url(
-        p_user_id     => c1.user_id,
-        p_page_id  => p_page_id,
-        p_app_alias   => p_app_alias,
-        p_base_url    => p_base_url
-      );
-      /* Make user specific substitutions */
-      l_user_email.v_subj := regexp_replace(l_email.v_subj, '#NICK_NAME#', c1.nick_name, 1, 0, 'i');
-      l_user_email.v_body := regexp_replace(l_email.v_body, '#NICK_NAME#', c1.nick_name, 1, 0, 'i');
-      l_user_email.v_body := regexp_replace(l_user_email.v_body, '#UNSUBSCRIBE_URL#', l_unsubscribe_url, 1, 0, 'i');
-      /* Send mail to user */
-      apex_mail.send (
-        p_from => l_email.v_from,
-        p_to   => c1.email,
-        p_subj => l_user_email.v_subj,
-        p_body => l_user_email.v_body
-      );
-    END LOOP;
-    /* we do have time wait email sending */
-    --APEX_MAIL.PUSH_QUEUE;
+    begin
+    select email_list_id
+      into l_list_id
+      from blog_posts
+      where page_id  = p_page_id;
+      logger.log('l_list_id :'||l_list_id, l_scope, null, l_params);
+    exception when no_data_found then 
+      logger.log_error('Missing data in blog posts table.', l_scope, null, l_params); 
+      raise;
+    end;
+
+    begin
+      select substr(comment_text,1,1000)
+        into l_comment_txt
+        from blog_comment
+        where comment_id = p_comment_id;
+      logger.log('l_comment_txt :'||substr(l_comment_txt,1,50), l_scope, null, l_params);
+    exception when no_data_found then 
+      logger.log_error('Missing data from the blog_comment table.', l_scope, null, l_params); 
+      raise;
+    end;
+
+    begin
+      select page_name
+        into l_post_name
+        from APEX_APPLICATION_PAGES
+        where page_id = p_page_id
+        and workspace = 'BLOG_WORKSPACE'
+        and APPLICATION_NAME='Blog';
+        logger.log('l_post_name :'||l_post_name, l_scope, null, l_params);
+    exception when no_data_found then 
+      logger.log_error('Missing data from the APEX_APPLICATION_PAGES table.', l_scope, null, l_params); 
+      raise;
+    end;
+
+    select count(*)
+      into l_post_name_count 
+      from table(blog_mailchimp_pkg.get_list_of_merge_fields(p_list_id => l_list_id))
+      where tag = 'POST_NAME'
+      order by merge_id;
+    
+    if l_post_name_count > 0 then
+      logger.log('The POST_NAME tag is already created for this list.', l_scope, null, l_params);
+    else 
+      logger.log('The POST_NAME tag does not already exist for this list.', l_scope, null, l_params);
+      blog_mailchimp_pkg.create_merge_field(p_list_id          => l_list_id, ------------ the id of the list that would make use of this merge id
+                                            p_merge_field_tag  => 'POST_NAME', ---------- the name you want to give the merge variable
+                                            p_merge_field_name => 'The blog post name.',
+                                            p_merge_id         => l_merge_id, ------------ out parameter
+                                            p_tag              => l_tag); ---------------- out parameter
+    end if;
+
+    blog_mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
+                                            p_merge_field_tag => 'POST_NAME',
+                                            p_merge_value     => l_post_name,
+                                            p_success         => l_success0);
+    if l_success0 then
+      logger.log('POST_NAME Merge field successfully updated.', l_scope, null, l_params);
+    else 
+      logger.log('POST_NAME Merge field not updated for unknown reason.', l_scope, null, l_params);
+    end if;
+    
+    select count(*)
+      into l_comment_count 
+      from table(blog_mailchimp_pkg.get_list_of_merge_fields(p_list_id => l_list_id))
+      where tag = 'LATEST_COMMENT'
+      order by merge_id;
+    
+    --if l_comment_count > 0 then
+    --  logger.log('The l_comment_count tag is already created for this list.', l_scope, null, l_params);
+    --else 
+      blog_mailchimp_pkg.create_merge_field(p_list_id          => l_list_id, --- the id of the list that would make use of this merge id
+                                            p_merge_field_tag  => 'COMMENT', --- the name you want to give the merge variable
+                                            p_merge_field_name => 'Latest blog post comment.',
+                                            p_merge_id         => l_merge_id,
+                                            p_tag              => l_tag);
+    --end if;
+
+    blog_mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
+                                            p_merge_field_tag => 'COMMENT',
+                                            p_merge_value     => l_comment_txt,
+                                            p_success         => l_success);
+    
+    if l_success then
+      logger.log('LATEST_COMMENT Merge field successfully updated.', l_scope, null, l_params);
+    else 
+      logger.log('LATEST_COMMENT Merge field not updated for unknown reason.', l_scope, null, l_params);
+    end if;
+    
+    blog_mailchimp_pkg.create_merge_field(  p_list_id          => l_list_id, --- the id of the list that would make use of this merge id
+                                            p_merge_field_tag  => 'BLOGLINK', --- the name you want to give the merge variable
+                                            p_merge_field_name => 'Link to blog.',
+                                            p_merge_id         => l_merge_id,
+                                            p_tag              => l_tag);
+    --end if;
+
+    blog_mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
+                                            p_merge_field_tag => 'BLOGLINK',
+                                            p_merge_value     => 'https://2122.io/apex/f?p=427:'||p_page_id,
+                                            p_success         => l_success1);
+                                  
+    if l_success1 then
+      logger.log('BLOGLINK Merge field successfully updated.', l_scope, null, l_params);
+    else 
+      logger.log('BLOGLINK Merge field not updated for unknown reason.', l_scope, null, l_params);
+    end if;
+
+    blog_mailchimp_pkg.create_campaign (  p_list_id      => l_list_id,
+                                          p_subject_line => 'New comment on blog post',
+                                          p_title        => 'New comment',
+                                          p_template_id  => l_template_id,
+                                          p_send_url     => l_send_url);
+
+    blog_mailchimp_pkg.send_campaign (p_send_url => l_send_url,
+                                      p_success  => l_success2);
+
+    
+    
+    if l_success2 then
+      logger.log('Email sent.', l_scope, null, l_params);
+    else 
+      logger.log('Email not sent for unknown reason.', l_scope, null, l_params);
+    end if; ---hhh : apparently this is the wrong spot
+
     UPDATE blog_comment
       SET notify_email_sent = 'Y'
     WHERE comment_id = p_comment_id
@@ -820,12 +931,13 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       AND moderated = 'Y'
       AND notify_email_sent = 'N'
     ;
+    
     logger.log('END', l_scope);
   
   exception when others then 
     logger.log_error('Unhandled Exception', l_scope, null, l_params); 
     raise;
-  END notify_readers;
+  END notify_blog_commenters;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
   PROCEDURE unsubscribe(

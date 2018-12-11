@@ -2,15 +2,21 @@ create or replace package body blog_mailchimp_pkg as
     
     gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.'; --------------- necessary for the logger implementation
     g_url_prefix    constant varchar2(100):= 'https://us18.api.mailchimp.com/3.0/'; ---- your Mailchimp url prefix (see instructions)
+    g_username      constant varchar2(50) := 'admin'; ---------------------------------- arbitrary - can be anything
+    g_password      constant varchar2(50) := '955df428887e5a1f3f1478b250eb1527-us18'; -- this is your API Key (very sensitive - keep to yourself)
+    g_wallet_path   constant varchar2(100):= 'file:/home/oracle/orapki_wallet_nowc'; --- the path on to your Oracle Wallet
+    --g_wallet_path   constant varchar2(100):= 'file:/u01/app/oracle/admin/c2devcon/ssl_wallet'; --- the path on to your Oracle Wallet
+    g_https_host    constant varchar2(100):= 'wildcardsan2.mailchimp.com'; ------------- necessary if you have an Oracle 12.2 database or higher (see instructions)
     g_company_name  constant varchar2(100):= '2122'; ----------------------------------- whatever your organization is called
     g_reply_to      constant varchar2(100):= 'hhudson@insum.ca'; ----------------------- the email that you've authenticated with Mailchimp
     g_from_name     constant varchar2(100):= 'Hayden Hudson'; -------------------------- the name your emails will appear to be from
-    g_username      constant varchar2(50) := 'admin'; ---------------------------------- arbitrary - can be anything
-    g_password      constant varchar2(50) := '186cc40d3bc8e3ce51d8ffe49452d676-us18'; -- this is your API Key (very sensitive - keep to yourself)
-    g_wallet_path   constant varchar2(100):= 'file:/home/oracle/orapki_wallet_nowc'; --- the path on to your Oracle Wallet
-    g_https_host    constant varchar2(100):= 'wildcardsan2.mailchimp.com'; ------------- necessary if you have an Oracle 12.2 database or higher (see instructions)
+    g_address1      constant varchar2(500):= '27 West St'; ----------------------------- The CAN SPAM act requires that you specify the organization's address
+    g_city          constant varchar2(500):= 'Cambridge'; ------------------------------ The CAN SPAM act requires that you specify the organization's address
+    g_state         constant varchar2(500):= 'MA'; ------------------------------------- The CAN SPAM act requires that you specify the organization's address
+    g_zip           constant varchar2(500):= '02139'; ---------------------------------- The CAN SPAM act requires that you specify the organization's address
+    g_county        constant varchar2(500):= 'U.S.A.'; --------------------------------- The CAN SPAM act requires that you specify the organization's address
 
--- see package specs
+
 function create_list (p_list_name           in varchar2, 
                       p_permission_reminder in varchar2) 
                       return varchar2
@@ -26,8 +32,9 @@ begin
   logger.append_param(l_params, 'p_permission_reminder', p_permission_reminder);
   logger.log('START', l_scope, null, l_params);
 
-    l_body := '{"name":"'||p_list_name||'","contact":{"company":"'||g_company_name||'","address1":"","city":"","state":"","zip":"","country":"","phone":""},"permission_reminder":"'||p_permission_reminder||'","campaign_defaults":{"from_name":"'||g_from_name||'''","from_email":"'||g_reply_to||'","subject":"","language":"en"},"email_type_option":true}';
-
+    l_body := '{"name":"'||p_list_name||'","contact":{"company":"'||g_company_name||'","address1":"'||g_address1||'","city":"'||g_city||'","state":"'||g_state||'","zip":"'||g_zip||'","country":"'||g_county||'","phone":""}';
+    l_body := l_body||',"permission_reminder":"'||p_permission_reminder||'","campaign_defaults":{"from_name":"'||g_from_name||'''","from_email":"'||g_reply_to||'","subject":"","language":"en"},"email_type_option":true}';
+    
     logger.log('l_body :'||l_body, l_scope, null, l_params);
 
     l_response := apex_web_service.make_rest_request(
@@ -80,8 +87,6 @@ begin
                 , p_https_host  => g_https_host
             );
 
-    logger.log('l_response :'||l_response, l_scope, null, l_params);
-
     l_confirmation := json_value(l_response, '$.status');
     
 
@@ -99,11 +104,118 @@ exception when others then
     raise;
 end add_subscriber;
 
+-- see pacakge specs
+function get_list_of_subscribers ( p_list_id in varchar2) -- the email list_id
+                                   RETURN subscriber_typ_set PIPELINED
+is 
+TYPE subscriber_table IS table of subscriber_typ_TBL%ROWTYPE INDEX BY PLS_INTEGER;
+l_scope         logger_logs.scope%type := gc_scope_prefix || 'get_list_of_subscribers';
+l_params        logger.tab_param;
+l_subscriber_set subscriber_table;
+l_subscribers    subscriber_typ_set := subscriber_typ_set();
+l_response       clob;
+l_total_items    integer;
+l_counter        integer;
+begin
+  logger.append_param(l_params, 'p_list_id', p_list_id);
+  logger.log('START', l_scope, null, l_params);
+  
+  l_response:= apex_web_service.make_rest_request(
+                  p_url         => g_url_prefix||'/lists/'||p_list_id||'/members/'
+                , p_http_method => 'GET'
+                , p_username    => g_username
+                , p_password    => g_password
+                , p_wallet_path => g_wallet_path
+                , p_https_host  => g_https_host
+            );
+
+  l_total_items := json_value(l_response, '$.total_items');
+  logger.log('l_total_items :'||l_total_items, l_scope, null, l_params);
+
+  for i in 1..l_total_items 
+  loop
+    l_counter := i -1;
+    l_subscriber_set(i).email_address := json_value(l_response, '$.members['||l_counter||'].email_address');
+    l_subscriber_set(i).first_name    := json_value(l_response, '$.members['||l_counter||'].merge_fields.FNAME');
+    l_subscriber_set(i).last_name     := json_value(l_response, '$.members['||l_counter||'].merge_fields.LNAME');
+    l_subscriber_set(i).status        := json_value(l_response, '$.members['||l_counter||'].status');
+    
+  end loop;
+
+  for i in 1..l_total_items 
+  loop
+  PIPE ROW (subscriber_typ(l_subscriber_set(i).email_address,
+                           l_subscriber_set(i).first_name,
+                           l_subscriber_set(i).last_name,
+                           l_subscriber_set(i).status
+                          )
+           );
+  end loop;
+
+  logger.log('END', l_scope);
+exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
+end get_list_of_subscribers;
+
+--see package specs
+function get_list_of_merge_fields (p_list_id in varchar2)
+                                   return merge_field_typ_set PIPELINED
+is 
+TYPE merge_field_table IS table of merge_field_typ_tbl%ROWTYPE INDEX BY PLS_INTEGER;
+l_scope logger_logs.scope%type := gc_scope_prefix || 'get_list_of_merge_fields';
+l_params logger.tab_param;
+l_merge_field_set merge_field_table;
+l_merge_fields    merge_field_typ_set := merge_field_typ_set();
+l_response       clob;
+l_total_items    integer;
+l_counter        integer;
+begin
+    logger.append_param(l_params, 'p_list_id', p_list_id);
+    logger.log('START', l_scope, null, l_params);
+
+    l_response:= apex_web_service.make_rest_request(
+                  p_url         => g_url_prefix||'/lists/'||p_list_id||'/merge-fields/'
+                , p_http_method => 'GET'
+                , p_username    => g_username
+                , p_password    => g_password
+                , p_wallet_path => g_wallet_path
+                , p_https_host  => g_https_host
+            );
+
+    l_total_items := json_value(l_response, '$.total_items');
+    logger.log('l_total_items :'||l_total_items, l_scope, null, l_params);
+
+    for i in 1..l_total_items 
+    loop
+        l_counter := i -1;
+        l_merge_field_set(i).merge_id      := json_value(l_response, '$.merge_fields['||l_counter||'].merge_id');
+        l_merge_field_set(i).tag           := json_value(l_response, '$.merge_fields['||l_counter||'].tag');
+        l_merge_field_set(i).name          := json_value(l_response, '$.merge_fields['||l_counter||'].name');
+        l_merge_field_set(i).default_value := json_value(l_response, '$.merge_fields['||l_counter||'].default_value');
+    end loop;
+
+    for i in 1..l_total_items 
+    loop
+    PIPE ROW (merge_field_typ(l_merge_field_set(i).merge_id,
+                              l_merge_field_set(i).tag,
+                              l_merge_field_set(i).name,
+                              l_merge_field_set(i).default_value
+                              )
+             );
+    end loop;
+    logger.log('END', l_scope);
+exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
+end get_list_of_merge_fields;
+
 -- see package specs
-procedure create_merge_field(p_list_id     in varchar2,
-                             p_merge_field in varchar2,
-                             p_merge_id    out integer,
-                             p_tag         out varchar2)
+procedure create_merge_field(p_list_id          in varchar2,
+                             p_merge_field_tag  in varchar2,
+                             p_merge_field_name in varchar2,
+                             p_merge_id         out integer,
+                             p_tag              out varchar2)
 is 
 l_scope    logger_logs.scope%type := gc_scope_prefix || 'create_merge_field';
 l_params   logger.tab_param;
@@ -111,20 +223,16 @@ l_body     varchar2(1000);
 l_response varchar2(2000);
 begin 
     logger.append_param(l_params, 'p_list_id', p_list_id);
-    logger.append_param(l_params, 'p_merge_field', p_merge_field);
-    logger.append_param(l_params, 'p_merge_id', p_merge_id);
-    logger.append_param(l_params, 'p_tag', p_tag);
+    logger.append_param(l_params, 'p_merge_field_tag', p_merge_field_tag);
+    logger.append_param(l_params, 'p_merge_field_name', p_merge_field_name);
     logger.log('START', l_scope, null, l_params);
 
-    /*apex_json.initialize_clob_output;
-    apex_json.open_object;       
-    apex_json.write('name', 'BLOGPOST');    
-    apex_json.write('type', 'text');
-    apex_json.close_all;                              
-    l_clob := apex_json.get_clob_output;                      
-    apex_json.free_output;*/
+    if length(p_merge_field_tag) > 10 then
+        logger.log_error('p_merge_field_tag cannot be more than 10 characters;', l_scope, null, l_params);
+        raise_application_error(-20456, 'Merge field too long');
+    end if;
 
-    l_body := '{"name":"'||p_merge_field||'", "type":"text"}';
+    l_body := '{"tag":"'||p_merge_field_tag||'", "name":"'||p_merge_field_name||'", "type":"text"}';
 
     l_response := apex_web_service.make_rest_request(
           p_url         => g_url_prefix||'lists/'||p_list_id||'/merge-fields/'
@@ -135,11 +243,17 @@ begin
         , p_wallet_path => g_wallet_path
         , p_https_host  => g_https_host
     );
-
+    
     p_merge_id := json_value(l_response, '$.merge_id');
     p_tag      := json_value(l_response, '$.tag');
 
-    logger.log(l_response, l_scope, null, l_params);
+    if p_merge_id is null then
+        logger.log_error(l_response, l_scope, null, l_params);
+    else 
+        logger.log('p_merge_id :'||p_merge_id, l_scope, null, l_params);
+    end if;
+    
+    logger.log('p_tag :'||p_tag, l_scope, null, l_params);
 
     logger.log('END', l_scope);
 exception when others then 
@@ -148,27 +262,37 @@ exception when others then
 end create_merge_field;
 
 -- see package specs
-procedure update_merge_field (p_list_id     in varchar2,
-                              p_merge_id    in number,
-                              p_merge_field in varchar2,
-                              p_merge_value in varchar2,
-                              p_success     out boolean)
+procedure update_merge_field (p_list_id         in varchar2,
+                              p_merge_field_tag in varchar2,
+                              p_merge_value     in varchar2,
+                              p_success         out boolean)
 is 
 l_scope        logger_logs.scope%type := gc_scope_prefix || 'update_merge_field';
 l_params       logger.tab_param;
+l_merge_id     integer;
 l_body         varchar2(1000);
 l_response     clob;
 l_confirmation varchar2(1000);
 begin
   logger.append_param(l_params, 'p_list_id', p_list_id);
-  logger.append_param(l_params, 'p_merge_id', p_merge_id);
+  logger.append_param(l_params, 'p_merge_field_tag', p_merge_field_tag);
   logger.append_param(l_params, 'p_merge_value', p_merge_value);
   logger.log('START', l_scope, null, l_params);
+    
+    begin
+      select merge_id
+        into l_merge_id 
+        from table(blog_mailchimp_pkg.get_list_of_merge_fields(p_list_id => p_list_id))
+        where tag = p_merge_field_tag;
+    exception when no_data_found then
+      logger.log_error('Tag does not exist in this list. It must be created 1st.', l_scope, null, l_params); 
+      raise;
+    end;
 
-    l_body := '{"name":"'||p_merge_field||'", "type":"text", "default_value": "'||p_merge_value||'", "options": {"size": 2000}}';
+    l_body := '{"name":"'||p_merge_field_tag||'", "type":"text", "default_value": "'||p_merge_value||'", "options": {"size": 2000}}';
 
         l_response := apex_web_service.make_rest_request(
-                p_url         => g_url_prefix||'/lists/'||p_list_id||'/merge-fields/'||p_merge_id
+                p_url         => g_url_prefix||'/lists/'||p_list_id||'/merge-fields/'||l_merge_id
                 , p_http_method => 'PATCH'
                 , p_username    => g_username
                 , p_password    => g_password
@@ -182,7 +306,7 @@ begin
 
     if l_confirmation = p_merge_value then
         p_success := true;
-        logger.log('Success! :'||l_confirmation, l_scope, null, l_params);
+        logger.log('Successfully updated merge field to :'||l_confirmation, l_scope, null, l_params);
     else 
         p_success := false;
         logger.log('Failure :'||l_confirmation, l_scope, null, l_params);
@@ -226,7 +350,7 @@ begin
 exception when others then 
     logger.log_error('Unhandled Exception', l_scope, null, l_params); 
     raise;
-end;
+end create_template;
 
 -- see package specs
 procedure update_template ( p_template_id in integer,
@@ -266,7 +390,7 @@ begin
 exception when others then 
     logger.log_error('Unhandled Exception', l_scope, null, l_params); 
     raise;
-end;
+end update_template;
 
 -- see package specs
 procedure create_campaign ( p_list_id      in varchar2,
@@ -275,10 +399,11 @@ procedure create_campaign ( p_list_id      in varchar2,
                             p_template_id  in number,
                             p_send_url     out varchar2)
 is
-l_scope    logger_logs.scope%type := gc_scope_prefix || 'create_campaign'; 
-l_params   logger.tab_param;
-l_body     varchar2(1000);
-l_response clob;
+l_scope       logger_logs.scope%type := gc_scope_prefix || 'create_campaign'; 
+l_params      logger.tab_param;
+l_body        varchar2(1000);
+l_response    clob;
+l_campaign_id varchar2(100);
 begin
     logger.append_param(l_params, 'p_list_id', p_list_id);
     logger.append_param(l_params, 'p_subject_line', p_subject_line);
@@ -300,6 +425,8 @@ begin
                     , p_https_host  => g_https_host
                 );
 
+    l_campaign_id := json_value(l_response, '$.id');
+    logger.log('l_campaign_id :'||l_campaign_id, l_scope, null, l_params);
     p_send_url := json_value(l_response, '$."_links"[3].href');
     logger.log('p_send_url :'||p_send_url, l_scope, null, l_params);
 
@@ -342,6 +469,74 @@ exception when others then
     logger.log_error('Unhandled Exception', l_scope, null, l_params); 
     raise;
 end send_campaign;
+
+function get_campaign_history return campaign_history_typ_set PIPELINED
+is 
+TYPE campaign_table IS table of campaign_history_typ_tbl%ROWTYPE INDEX BY PLS_INTEGER;
+l_scope logger_logs.scope%type := gc_scope_prefix || 'get_campaign_history';
+l_params logger.tab_param;
+l_campaign_set   campaign_table;
+l_campaigns      campaign_history_typ_set := campaign_history_typ_set();
+l_response       clob;
+l_total_items    integer;
+l_counter        integer;
+l_send_time      varchar2(100);
+begin
+    logger.log('START', l_scope, null, l_params);
+
+    l_response:= apex_web_service.make_rest_request(
+                  p_url         => g_url_prefix||'/campaigns/'
+                , p_http_method => 'GET'
+                , p_username    => g_username
+                , p_password    => g_password
+                , p_wallet_path => g_wallet_path
+                , p_https_host  => g_https_host
+            );
+
+    l_total_items := json_value(l_response, '$.total_items');
+    logger.log('l_total_items :'||l_total_items, l_scope, null, l_params);
+
+    for i in 1..l_total_items 
+  loop
+    l_counter := i -1;
+    l_campaign_set(i).campaign_id       := json_value(l_response, '$.campaigns['||l_counter||'].id');
+    l_campaign_set(i).emails_sent       := json_value(l_response, '$.campaigns['||l_counter||'].emails_sent');
+    l_send_time                         := json_value(l_response, '$.campaigns['||l_counter||'].send_time');
+    l_campaign_set(i).send_time         := to_date(substr(l_send_time,1,instr(l_send_time,'+')-1), 'YYYY-MM-DD"T"HH24:MI:SS');
+    l_campaign_set(i).recipient_list_id := json_value(l_response, '$.campaigns['||l_counter||'].recipients.list_id');
+    l_campaign_set(i).template_id       := json_value(l_response, '$.campaigns['||l_counter||'].settings.template_id');
+    l_campaign_set(i).subject_line      := json_value(l_response, '$.campaigns['||l_counter||'].settings.subject_line');
+    l_campaign_set(i).from_name         := json_value(l_response, '$.campaigns['||l_counter||'].settings.from_name');
+    l_campaign_set(i).opens             := json_value(l_response, '$.campaigns['||l_counter||'].report_summary.opens');
+    l_campaign_set(i).unique_opens      := json_value(l_response, '$.campaigns['||l_counter||'].report_summary.unique_opens');
+    l_campaign_set(i).open_rate         := json_value(l_response, '$.campaigns['||l_counter||'].report_summary.open_rate');
+    l_campaign_set(i).clicks            := json_value(l_response, '$.campaigns['||l_counter||'].report_summary.clicks');
+    l_campaign_set(i).cancel_send       := json_value(l_response, '$.campaigns['||l_counter||']."_links"[4].href');
+  end loop;
+
+  for i in 1..l_total_items 
+  loop
+  PIPE ROW (campaign_history_typ(l_campaign_set(i).campaign_id,
+                                 l_campaign_set(i).emails_sent,
+                                 l_campaign_set(i).send_time,
+                                 l_campaign_set(i).recipient_list_id,
+                                 l_campaign_set(i).template_id,
+                                 l_campaign_set(i).subject_line,
+                                 l_campaign_set(i).from_name,
+                                 l_campaign_set(i).opens,
+                                 l_campaign_set(i).unique_opens,
+                                 l_campaign_set(i).open_rate,
+                                 l_campaign_set(i).clicks,
+                                 l_campaign_set(i).cancel_send
+                          )
+           );
+  end loop;
+
+    logger.log('END', l_scope);
+exception when others then 
+    logger.log_error('Unhandled Exception', l_scope, null, l_params); 
+    raise;
+end get_campaign_history;
 
 end blog_mailchimp_pkg;
 /

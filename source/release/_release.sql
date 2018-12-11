@@ -1,5 +1,6 @@
 @initial_setup/prereqs.sql;
 @source/build/create_tables.sql;
+@source/build/create_types.sql;
 @source/build/create_indexes.sql;
 @source/sequences/blog_seq.sql;
 @source/build/create_synonyms.sql;
@@ -24,9 +25,8 @@ set define on;
 @source/packages/blog_mailchimp_pkg.pks;
 @source/packages/blog_mailchimp_pkg.pkb;
 @source/build/triggers.sql;
-@source/seed/parameter_data.sql;
+--@source/seed/parameter_data.sql;
 @source/seed/admin.sql;
-@source/build/fk.sql;
 @source/apex/f209021.sql;
 @source/apex/f427.sql;
 /

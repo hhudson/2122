@@ -11,18 +11,26 @@ procedure add_subscriber (  p_list_id in varchar2, --- the id of the list you ar
                             p_lname   in varchar2, --- the last name of this subscriber
                             p_success out boolean); -- a confirmation of that adding the subscriber was successful
 
+--print list of subscribers
+function get_list_of_subscribers ( p_list_id in varchar2) -- the email list_id
+                                   return subscriber_typ_set PIPELINED;
+
+--print list of merge fields for a given email list
+function get_list_of_merge_fields (p_list_id in varchar2) -- the email list_id
+                                   return merge_field_typ_set PIPELINED;
+
 --create a new merge_field
-procedure create_merge_field(p_list_id     in varchar2, --- the id of the list that would make use of this merge id
-                             p_merge_field in varchar2, --- the name you want to give the merge variable
-                             p_merge_id    out integer,
-                             p_tag         out varchar2);
+procedure create_merge_field(p_list_id          in varchar2, --- the id of the list that would make use of this merge id
+                             p_merge_field_tag  in varchar2, --- the name you want to give the merge variable (10 char max)
+                             p_merge_field_name in varchar2, --- a more descriptive name
+                             p_merge_id         out integer,
+                             p_tag              out varchar2);
 
 --update the default value of an existing merge_field
-procedure update_merge_field (p_list_id     in varchar2, --- the id of the list
-                              p_merge_id    in number,   --- the id of the merge field
-                              p_merge_field in varchar2, --- the name of the merge field
-                              p_merge_value in varchar2, --- the value you want to pass into the email
-                              p_success     out boolean);
+procedure update_merge_field (p_list_id         in varchar2, --- the id of the list
+                              p_merge_field_tag in varchar2, --- the tag of the merge field
+                              p_merge_value     in varchar2, --- the value you want to pass into the email
+                              p_success         out boolean);
 
 --create a new template
 procedure create_template ( p_template_name in  varchar2, --- the name you want to give the template
@@ -43,6 +51,13 @@ procedure create_campaign ( p_list_id      in varchar2,
 --send email campaign
 procedure send_campaign (p_send_url in varchar2,
                          p_success  out boolean);
+
+
+-- get history of all campaigns
+function get_campaign_history return campaign_history_typ_set PIPELINED;
+
+
+
 
 end blog_mailchimp_pkg;
 /

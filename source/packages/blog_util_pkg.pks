@@ -39,14 +39,10 @@ AS
     p_comment         IN VARCHAR2
   );
 --------------------------------------------------------------------------------
-  PROCEDURE notify_readers (
-    p_comment_id      IN NUMBER,
-    p_user_id         IN NUMBER,
-    p_page_id      IN NUMBER,
-    p_page_title   IN VARCHAR2,
-    p_app_alias       IN VARCHAR2,
-    p_base_url        IN VARCHAR2,
-    p_blog_name       IN VARCHAR2
+--------------------------------------------------------------------------------
+PROCEDURE notify_blog_commenters (
+    p_comment_id    IN NUMBER,
+    p_page_id       IN NUMBER
   );
 --------------------------------------------------------------------------------
   PROCEDURE unsubscribe (
