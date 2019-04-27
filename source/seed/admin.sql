@@ -18,3 +18,5 @@ email
 || '<img alt="My Blog Administrator" src="#IMAGE_PREFIX#menu/student_bx_128x128.png" style="width:128px;height:128px;float:left" />'
 || '</p>'
 );
+
+commit;
