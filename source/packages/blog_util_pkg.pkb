@@ -386,7 +386,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
         raise;
       end;
 
-      blog_mailchimp_pkg.add_subscriber ( p_list_id => l_list_id, --- the id of the list you are adding a subscriber to
+           mailchimp_pkg.add_subscriber ( p_list_id => l_list_id, --- the id of the list you are adding a subscriber to
                                           p_email   => l_comment_user_rec.email, --- the email of the new subscriber
                                           p_fname   => l_comment_user_rec.nick_name, --- the 1st name of this subscriber
                                           p_lname   => null, --- the last name of this subscriber
@@ -794,6 +794,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     l_success         boolean;
     l_success1        boolean;
     l_success2        boolean;
+    l_campaign_id     varchar2(50);
     l_send_url        varchar2(1000);
   BEGIN
     logger.append_param(l_params, 'p_comment_id', p_comment_id);
@@ -827,7 +828,6 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
         into l_post_name
         from APEX_APPLICATION_PAGES
         where page_id = p_page_id
-        and workspace = 'BLOG_WORKSPACE'
         and APPLICATION_NAME='Blog';
         logger.log('l_post_name :'||l_post_name, l_scope, null, l_params);
     exception when no_data_found then 
@@ -837,7 +837,7 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
 
     select count(*)
       into l_post_name_count 
-      from table(blog_mailchimp_pkg.get_list_of_merge_fields(p_list_id => l_list_id))
+      from table(mailchimp_pkg.get_list_of_merge_fields(p_list_id => l_list_id))
       where tag = 'POST_NAME'
       order by merge_id;
     
@@ -845,14 +845,14 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       logger.log('The POST_NAME tag is already created for this list.', l_scope, null, l_params);
     else 
       logger.log('The POST_NAME tag does not already exist for this list.', l_scope, null, l_params);
-      blog_mailchimp_pkg.create_merge_field(p_list_id          => l_list_id, ------------ the id of the list that would make use of this merge id
+           mailchimp_pkg.create_merge_field(p_list_id          => l_list_id, ------------ the id of the list that would make use of this merge id
                                             p_merge_field_tag  => 'POST_NAME', ---------- the name you want to give the merge variable
                                             p_merge_field_name => 'The blog post name.',
                                             p_merge_id         => l_merge_id, ------------ out parameter
                                             p_tag              => l_tag); ---------------- out parameter
     end if;
 
-    blog_mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
+         mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
                                             p_merge_field_tag => 'POST_NAME',
                                             p_merge_value     => l_post_name,
                                             p_success         => l_success0);
@@ -864,21 +864,21 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
     
     select count(*)
       into l_comment_count 
-      from table(blog_mailchimp_pkg.get_list_of_merge_fields(p_list_id => l_list_id))
+      from table(mailchimp_pkg.get_list_of_merge_fields(p_list_id => l_list_id))
       where tag = 'LATEST_COMMENT'
       order by merge_id;
     
     --if l_comment_count > 0 then
     --  logger.log('The l_comment_count tag is already created for this list.', l_scope, null, l_params);
     --else 
-      blog_mailchimp_pkg.create_merge_field(p_list_id          => l_list_id, --- the id of the list that would make use of this merge id
+           mailchimp_pkg.create_merge_field(p_list_id          => l_list_id, --- the id of the list that would make use of this merge id
                                             p_merge_field_tag  => 'COMMENT', --- the name you want to give the merge variable
                                             p_merge_field_name => 'Latest blog post comment.',
                                             p_merge_id         => l_merge_id,
                                             p_tag              => l_tag);
     --end if;
 
-    blog_mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
+         mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
                                             p_merge_field_tag => 'COMMENT',
                                             p_merge_value     => l_comment_txt,
                                             p_success         => l_success);
@@ -889,14 +889,14 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       logger.log('LATEST_COMMENT Merge field not updated for unknown reason.', l_scope, null, l_params);
     end if;
     
-    blog_mailchimp_pkg.create_merge_field(  p_list_id          => l_list_id, --- the id of the list that would make use of this merge id
+         mailchimp_pkg.create_merge_field(  p_list_id          => l_list_id, --- the id of the list that would make use of this merge id
                                             p_merge_field_tag  => 'BLOGLINK', --- the name you want to give the merge variable
                                             p_merge_field_name => 'Link to blog.',
                                             p_merge_id         => l_merge_id,
                                             p_tag              => l_tag);
     --end if;
 
-    blog_mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
+         mailchimp_pkg.update_merge_field ( p_list_id         => l_list_id,
                                             p_merge_field_tag => 'BLOGLINK',
                                             p_merge_value     => 'https://2122.io/apex/f?p=427:'||p_page_id,
                                             p_success         => l_success1);
@@ -907,13 +907,14 @@ gc_scope_prefix constant varchar2(31) := lower($$plsql_unit) || '.';
       logger.log('BLOGLINK Merge field not updated for unknown reason.', l_scope, null, l_params);
     end if;
 
-    blog_mailchimp_pkg.create_campaign (  p_list_id      => l_list_id,
+         mailchimp_pkg.create_campaign (  p_list_id      => l_list_id,
                                           p_subject_line => 'New comment on blog post',
                                           p_title        => 'New comment',
                                           p_template_id  => l_template_id,
+                                          p_campaign_id  => l_campaign_id,
                                           p_send_url     => l_send_url);
 
-    blog_mailchimp_pkg.send_campaign (p_send_url => l_send_url,
+         mailchimp_pkg.send_campaign (p_send_url => l_send_url,
                                       p_success  => l_success2);
 
     

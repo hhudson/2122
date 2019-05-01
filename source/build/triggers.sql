@@ -227,8 +227,8 @@ CREATE OR REPLACE TRIGGER blog_posts_trg before
 BEGIN
   IF inserting THEN
     IF :NEW.email_list_id IS NULL THEN
-       :NEW.email_list_id := blog_mailchimp_pkg.create_list (p_list_name           => :NEW.page_id||'_list', 
-                                                             p_permission_reminder => 'You are receiving this email because you commented on this blog post.');
+       :NEW.email_list_id := mailchimp_pkg.create_list (p_list_name           => :NEW.page_id||'_list', 
+                                                        p_permission_reminder => 'You are receiving this email because you commented on this blog post.');
     END IF;
     IF :NEW.created_by IS NULL THEN
       :NEW.created_by := COALESCE(v('APP_USER'), USER);
