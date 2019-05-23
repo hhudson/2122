@@ -268,7 +268,7 @@ create table blog_email_template (template_id integer primary key, email_html cl
 /
 create table blog_posts (
 page_id integer primary key, 
-email_list_id varchar2(50) not null enable,
+email_list_id varchar2(50),  --not null enable,
 CREATED_ON DATE DEFAULT SYSDATE NOT NULL ENABLE,
 CREATED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE,
 CHANGED_ON DATE DEFAULT SYSDATE NOT NULL ENABLE,
