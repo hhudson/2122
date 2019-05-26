@@ -274,31 +274,3 @@ CREATED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE,
 CHANGED_ON DATE DEFAULT SYSDATE NOT NULL ENABLE,
 CHANGED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE)
 /
-CREATE TABLE subscriber_typ_tbl (
-    email_address    VARCHAR2(100),
-    first_name       VARCHAR2(50),
-    last_name        VARCHAR2(50),
-    status           varchar2(50))
-/
-create table merge_field_typ_tbl (
-    merge_id       INTEGER,
-    tag            VARCHAR2(50),
-    name           VARCHAR2(50),
-    default_value  VARCHAR2(2000)
-  )
-/
-create table campaign_history_typ_tbl (
-    campaign_id        VARCHAR2(50),
-    emails_sent        INTEGER,
-    send_time          DATE,
-    recipient_list_id  VARCHAR2(2000),
-    template_id        INTEGER,
-    subject_line       VARCHAR2(100),
-    from_name          VARCHAR2(200),
-    opens              INTEGER,
-    unique_opens       INTEGER,
-    open_rate          INTEGER,
-    clicks             INTEGER,
-    cancel_send        VARCHAR2(1000)
-  )
-/

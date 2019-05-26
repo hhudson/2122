@@ -32,9 +32,3 @@ DROP table blog_email_template
 /
 DROP table blog_posts
 /
-DROP TABLE subscriber_typ_tbl
-/
-DROP table merge_field_typ_tbl
-/
-DROP table campaign_history_typ_tbl
-/

@@ -69,3 +69,22 @@ exception when OTHERS then
     end if;    
 end;
 /
+--MAILCHIMP
+declare
+l_cnt integer;
+begin
+  execute immediate 'select count(*) from merge_field_typ_tbl' into l_cnt;
+
+  dbms_output.put_line('_____________________________________________________________________________');
+  dbms_output.put_line('Mailchimp appears to have been installed. Great.');
+  dbms_output.put_line('_____________________________________________________________________________');
+  
+exception when OTHERS then
+    if SQLCODE=-942 THEN
+        --dbms_output.put_line('Error: Logger not installed. Please install before continuing.');
+        raise_application_error (-20001, 'Error: Mailchimp not installed. Please install before continuing.');
+    else 
+        dbms_output.put_line('Other error :'||SQLERRM);
+    end if;    
+end;
+/
