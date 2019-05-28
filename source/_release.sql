@@ -22,8 +22,6 @@ set define on;
 @~/Documents/2122/source/packages/blog_install_pkg.pkb;
 @~/Documents/2122/source/packages/blog_admin_app_pkg.pks;
 @~/Documents/2122/source/packages/blog_admin_app_pkg.pkb;
---@~/Documents/2122/source/packages/blog_mailchimp_pkg.pks;
---@~/Documents/2122/source/packages/blog_mailchimp_pkg.pkb;
 @~/Documents/2122/source/build/triggers.sql;
 --@source/seed/parameter_data.sql;
 @~/Documents/2122/source/seed/admin.sql;
