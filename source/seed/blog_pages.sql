@@ -11,3 +11,4 @@ insert into blog_posts (page_id) values (40);
 insert into blog_posts (page_id) values (41);
 insert into blog_posts (page_id) values (42);
 insert into blog_posts (page_id) values (43);
+insert into blog_posts (page_id) values (44);
