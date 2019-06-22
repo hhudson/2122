@@ -274,3 +274,16 @@ CREATED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE,
 CHANGED_ON DATE DEFAULT SYSDATE NOT NULL ENABLE,
 CHANGED_BY VARCHAR2(80 CHAR) NOT NULL ENABLE)
 /
+create table test_automation_comparison (
+    software_id   integer primary key,
+    software_name varchar2(50),
+    write         integer,
+    read          integer,
+    trust         integer,
+    act_on_output integer,
+    debug         integer,
+    install       integer,
+    run           integer,
+    created_on    date default sysdate 
+)
+/
